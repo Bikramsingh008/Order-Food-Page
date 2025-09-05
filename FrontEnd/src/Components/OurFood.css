@@ -1,0 +1,175 @@
+.foodCart {
+  background: linear-gradient(135deg, #000000, #1c1c1c);
+  color: white;
+  font-size: 18px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  cursor: pointer;
+  margin-top: 12px;
+  border: none;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  position: relative;
+  left: 0px;
+}
+
+.menu-title {
+  margin: 40px 0 20px;
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: bold;
+
+  /* gradient text */
+  background: linear-gradient(90deg, #00bbff, #ee0909, #0b8e87, #0bafe6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+
+  transition: all 0.4s ease-in-out;
+  cursor: pointer;
+}
+
+
+
+.foodCart:hover {
+  background: linear-gradient(135deg, #222, #111);
+  color: rgb(233, 162, 22);
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.4);
+}
+
+/* Food grid layout */
+.food-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 40px;
+  width: 90%;
+  margin: 80px auto;
+  padding: 20px;
+}
+
+/* Food item cards */
+.food-item {
+  text-align: center;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+  transition: all 0.4s ease;
+  transform: translateY(0);
+}
+
+.food-item:hover {
+  transform: translateY(-12px) scale(1.03);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35),
+              0 0 25px rgba(233, 162, 22, 0.25);
+}
+
+/* Food images floating style */
+.food-image {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  border-radius: 16px;
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+.food-image:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 20px rgba(233, 162, 22, 0.2);
+}
+
+/* Food text */
+.food-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin-top: 12px;
+  color: #0a0a0afe;
+}
+
+.food-price {
+  font-size: 20px;
+  font-weight: 500;
+  margin-top: 6px;
+  color: rgb(0, 0, 0);
+}
+.quantity-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 10px 0;
+  gap: 12px;
+}
+.quantity-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 12px 0;
+  gap: 15px;
+}
+
+.qty-btn {
+  background: linear-gradient(135deg, #ff7f27, #e9a216);
+  color: white;
+  border: none;
+  font-size: 18px;
+  font-weight: bold;
+  width: 35px;
+  height: 35px;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0px 4px 8px rgba(0,0,0,0.15);
+  transition: all 0.3s ease-in-out;
+}
+
+.qty-btn:hover {
+  background: linear-gradient(135deg, #e9a216, #ff7f27);
+  transform: translateY(-2px) scale(1.1);
+  box-shadow: 0px 6px 12px rgba(0,0,0,0.25);
+}
+
+.qty-value {
+  font-size: 22px;
+  font-weight: bold;
+  min-width: 30px;
+  text-align: center;
+  color: #222;
+  background: #f8f8f8;
+  padding: 4px 10px;
+  border-radius: 6px;
+  box-shadow: inset 0px 2px 4px rgba(0,0,0,0.1);
+}
+.quantity-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.qty-btn {
+  padding: 5px 12px;
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  background: #555;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.qty-btn:hover:not(:disabled) {
+  background: #555;
+  transform: scale(1.05);
+}
+
+.qty-btn:disabled {
+  background: #555;
+  cursor: not-allowed;
+}
+
+.qty-value {
+  font-size: 18px;
+  font-weight: bold;
+  min-width: 25px;
+  text-align: center;
+}
+

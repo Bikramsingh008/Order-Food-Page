@@ -1,0 +1,81 @@
+.signin-container {
+  height: 90vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;;
+  font-family: 'Segoe UI', sans-serif;
+  position: relative;
+  top: 50px;
+}
+
+.signin-card {
+  background-color: rgba(255, 255, 255, 0.95);
+  padding: 40px 30px;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  animation: fadeIn 1s ease;
+}
+
+.signin-card h2 {
+  margin-bottom: 10px;
+  color: #e9a216;
+}
+
+.signin-card p {
+  margin-bottom: 25px;
+  color: #444;
+}
+
+.form-group {
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: #222;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+}
+
+.signin-button {
+  width: 100%;
+  padding: 12px;
+  background-color: #e9a216;
+  color: white;
+  font-size: 17px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  position: relative;
+  left: 0px;
+}
+
+.signin-button:hover {
+  background-color: #c28810;
+  color: white;
+}
+
+.signup-link {
+  margin-top: 15px;
+  color: #555;
+}
+
+.signup-link a {
+  color: #e9a216;
+  text-decoration: none;
+}
+
+

@@ -1,0 +1,129 @@
+.Header {
+  position: relative;
+  top: 10px;
+  width: 97%;
+  background-color: white;
+  z-index: 1000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 2px solid rgb(187, 184, 184);
+  border-radius: 20px;
+  padding: 10px 20px;
+  box-shadow: 0 1px 25px rgb(233, 162, 22);
+  font-size: 30px;
+}
+
+.parts {
+  list-style: none;
+  display: flex;
+  gap: 35px;
+  padding: 10;
+}
+
+.parts li a {
+  text-decoration: none;
+  color: black;
+  font-weight: bold;
+  transition: color 0.3s ease;
+}
+
+.parts li a:hover {
+  color: rgb(233, 162, 22);
+}
+
+@media (max-width: 768px) {
+  .parts {
+    display: none;
+  }
+
+  .menu-button {
+    display: block;
+  }
+}
+.menu-button {
+  font-size: 30px;
+  cursor: pointer;
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .menu-button {
+    display:contents;
+  }
+}
+
+.cart-slide {
+  transform: translateX(-100%); /* hidden initially */
+  animation: slideIn 0.6s forwards;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0) translateY(-50%);
+  }
+}
+
+.parts {
+  list-style: none;
+  display: flex;
+  gap: 30px;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.nav-link {
+  text-decoration: none;
+  color: white;
+  position: relative;
+  padding: 5px 0;
+  transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+  color: rgb(233, 162, 22);
+}
+
+/* ✅ Active link underline (Amazon-like effect) */
+.nav-link.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  height: 3px;
+  width: 100%;
+  background: linear-gradient(90deg, #e9a216, #ffcc33);
+  border-radius: 2px;
+  animation: slideIn 0.3s ease forwards;
+}
+/* Add these or extend your existing CSS */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffd700; /* gold */
+}
+
+.logout-btn {
+  background: #e63946;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.3s ease;
+}
+
+.logout-btn:hover {
+  background: #b71c1c;
+}
+
