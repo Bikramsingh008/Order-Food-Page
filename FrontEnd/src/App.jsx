@@ -9,7 +9,7 @@ import Home from "./Components/Home";
 import AboutUs from "./Components/AboutUs";
 import Signin from "./Components/Signin";
 import Cart from "./Components/Cart";
-import Signup from "./Components/SignUp";
+import Signup from "./Components/Signup";
 import AdminPanel from "./Components/AdminPanel";
 import AdminRoute from "./Components/AdminRoute";
 import UserProfile from "./Components/UserProfile";
