@@ -1,14 +1,16 @@
 import React from "react";
 import Hero from "./Hero";
-import Delivery from "./Delivery";
+import CategoryBar from "./CategoryBar";
 import FoodSlider from "./FoodSlider";
+import WhyUs from "./WhyUs";
 
 const Home = ({ handleCart }) => {
   return (
     <>
-      <Delivery />
       <Hero />
+      <CategoryBar />
       <FoodSlider handleCart={handleCart} />
+      <WhyUs />
     </>
   );
 };

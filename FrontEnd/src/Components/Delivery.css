@@ -158,12 +158,49 @@
   left: -30px;
 }
 
-/* ================= ANIMATIONS ================= */
-@keyframes spin-slow {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 .animate-spin-slow {
   animation: spin-slow 30s linear infinite;
+}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 900px) {
+  .delivery-section {
+    min-height: auto;
+    padding: 4rem 1.5rem;
+  }
+  .delivery-container {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+    text-align: center;
+  }
+  .delivery-text {
+    max-width: 100%;
+    margin: 0 auto;
+  }
+  .delivery-heading {
+    font-size: 2.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .delivery-heading {
+    font-size: 2.2rem;
+  }
+  .delivery-paragraph {
+    font-size: 1.05rem;
+  }
+  .circle-border {
+    width: 280px;
+    height: 280px;
+  }
+  .label {
+    font-size: 0.78rem;
+    padding: 6px 12px;
+  }
+  .right-label {
+    right: 0;
+  }
+  .bottom-label {
+    left: 0;
+  }
 }

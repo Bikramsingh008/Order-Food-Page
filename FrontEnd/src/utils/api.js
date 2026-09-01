@@ -1,2 +1,3 @@
 // src/utils/api.js
-export const API_URL = "http://localhost:4000/api";
+const backendBase = import.meta.env.VITE_BACKEND_URL || "";
+export const API_URL = backendBase ? `${backendBase.replace(/\/+$/, "")}/api` : "/api";

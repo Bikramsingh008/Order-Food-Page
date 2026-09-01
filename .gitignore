@@ -1,0 +1,19 @@
+# Root .gitignore
+node_modules/
+dist/
+build/
+.env
+.env.local
+.env.*.local
+Backend/.env
+FrontEnd/.env
+FrontEnd/src/.env
+Admin/.env
+.DS_Store
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.system_generated/
+audit_seed.js
+verify_image_contents.js

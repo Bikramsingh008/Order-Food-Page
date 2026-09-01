@@ -28,9 +28,9 @@ const App = () => {
         <>
           <Navbar setToken={setToken}/>
           <hr />
-          <div className="flex w-full">
+          <div className="flex flex-col md:flex-row w-full">
             <SideBar />
-            <div className="w-[70%] mx-auto ml-[max(5vw,25px)] my-8 text-gray-600 text-base">
+            <div className="w-full md:w-[75%] px-4 sm:px-6 md:px-8 my-6 text-gray-600 text-base">
               <Routes>
                 <Route path="/add" element={<Add setToken={token}/>} />
                 <Route path="/list" element={<List setToken={token}/>} />

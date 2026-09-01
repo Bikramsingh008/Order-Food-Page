@@ -1,0 +1,20 @@
+{
+  "name": "order-food-page-unified",
+  "version": "1.0.0",
+  "description": "Fullstack Food Ordering App - Single Link Deployment",
+  "main": "Backend/server.js",
+  "type": "module",
+  "scripts": {
+    "install:all": "npm --prefix Backend install && npm --prefix FrontEnd install && npm --prefix Admin install",
+    "build:frontend": "npm --prefix FrontEnd install && npm --prefix FrontEnd run build",
+    "build:admin": "npm --prefix Admin install && npm --prefix Admin run build",
+    "build": "npm --prefix Backend install && npm --prefix FrontEnd install && npm --prefix FrontEnd run build && npm --prefix Admin install && npm --prefix Admin run build",
+    "start": "npm --prefix Backend start",
+    "server": "npm --prefix Backend run server",
+    "dev:frontend": "npm --prefix FrontEnd run dev",
+    "dev:admin": "npm --prefix Admin run dev"
+  },
+  "keywords": ["food-ordering", "fullstack", "react", "express", "mongodb"],
+  "author": "",
+  "license": "ISC"
+}

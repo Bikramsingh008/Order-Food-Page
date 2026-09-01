@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./App.css";
 import Header from "./Components/Header";
 import Footer from "./Components/Footer";
 import OurFood from "./Components/OurFood";
+import FoodDetail from "./Components/FoodDetail";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./Components/Home";
 import AboutUs from "./Components/AboutUs";
@@ -11,49 +12,68 @@ import Cart from "./Components/Cart";
 import Signup from "./Components/SignUp";
 import AdminPanel from "./Components/AdminPanel";
 import AdminRoute from "./Components/AdminRoute";
-
+import UserProfile from "./Components/UserProfile";
+import MyOrders from "./Components/MyOrders";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function App() {
-  const [cartItems, setCartItems] = useState([]);
-
-  // ✅ add to cart
-  const handleCart = (item) => {
-    const existingItem = cartItems.find(
-      (cartItem) => cartItem.id === item.id
-    );
-
-    if (existingItem) {
-      setCartItems(
-        cartItems.map((cartItem) =>
-          cartItem.id === item.id
-            ? { ...cartItem, quantity: cartItem.quantity + 1 }
-            : cartItem
-        )
-      );
-    } else {
-      setCartItems([...cartItems, item]);
+  const [cartItems, setCartItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem("yummy_cart");
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
     }
-  };
+  });
 
-  // ✅ remove from cart
-  const removeFromCart = (index) => {
-    const newCart = [...cartItems];
-    newCart.splice(index, 1);
-    setCartItems(newCart);
-  };
+  useEffect(() => {
+    localStorage.setItem("yummy_cart", JSON.stringify(cartItems));
+  }, [cartItems]);
 
-  const updateQuantity = (index, newQuantity) => {
+  // Add itemized product to cart
+  const handleCart = (newItem) => {
     setCartItems((prevCart) => {
-      const updatedCart = [...prevCart];
-      updatedCart[index].quantity = newQuantity;
-      return updatedCart;
+      const itemKey = newItem.cartItemId || `${newItem.id}_${newItem.itemPrice}`;
+      const existingIndex = prevCart.findIndex(
+        (ci) => (ci.cartItemId || `${ci.id}_${ci.itemPrice}`) === itemKey
+      );
+
+      if (existingIndex > -1) {
+        const updated = [...prevCart];
+        updated[existingIndex].quantity += newItem.quantity;
+        return updated;
+      } else {
+        return [...prevCart, newItem];
+      }
     });
+  };
+
+  // Remove from cart
+  const removeFromCart = (index) => {
+    setCartItems((prevCart) => prevCart.filter((_, i) => i !== index));
+  };
+
+  // Update item quantity
+  const updateQuantity = (index, newQuantity) => {
+    if (newQuantity < 1) return;
+    setCartItems((prevCart) => {
+      const updated = [...prevCart];
+      updated[index].quantity = newQuantity;
+      return updated;
+    });
+  };
+
+  // Clear entire cart
+  const clearCart = () => {
+    setCartItems([]);
   };
 
   return (
     <>
       <BrowserRouter>
-        <Header count={cartItems.length} />
+        <ToastContainer position="top-right" autoClose={3000} theme="colored" />
+        <Header count={cartItems.reduce((acc, item) => acc + item.quantity, 0)} />
         <Routes>
           <Route path="/" element={<Home handleCart={handleCart} />} />
           <Route path="/aboutus" element={<AboutUs />} />
@@ -61,9 +81,15 @@ function App() {
             path="/ourfood"
             element={<OurFood handleCart={handleCart} />}
           />
+          <Route
+            path="/food/:id"
+            element={<FoodDetail handleCart={handleCart} />}
+          />
 
           <Route path="/signin" element={<Signin />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/profile" element={<UserProfile />} />
+          <Route path="/myorders" element={<MyOrders />} />
           <Route
             path="/cart"
             element={
@@ -71,17 +97,18 @@ function App() {
                 cartItems={cartItems}
                 updateQuantity={updateQuantity}
                 removeFromCart={removeFromCart}
+                clearCart={clearCart}
               />
             }
           />
           <Route
-  path="/admin/*"
-  element={
-    <AdminRoute>
-      <AdminPanel />
-    </AdminRoute>
-  }
-/>
+            path="/admin/*"
+            element={
+              <AdminRoute>
+                <AdminPanel />
+              </AdminRoute>
+            }
+          />
         </Routes>
         <Footer />
       </BrowserRouter>
