@@ -14,7 +14,25 @@
     "dev:frontend": "npm --prefix FrontEnd run dev",
     "dev:admin": "npm --prefix Admin run dev"
   },
-  "keywords": ["food-ordering", "fullstack", "react", "express", "mongodb"],
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cloudinary": "^2.7.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.18.0",
+    "multer": "^2.0.2",
+    "razorpay": "^2.9.6",
+    "validator": "^13.15.15"
+  },
+  "keywords": [
+    "food-ordering",
+    "fullstack",
+    "react",
+    "express",
+    "mongodb"
+  ],
   "author": "",
   "license": "ISC"
 }

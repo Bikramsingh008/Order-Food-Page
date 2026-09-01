@@ -1,8 +1,12 @@
 {
+  "version": 2,
   "buildCommand": "npm run build:frontend",
   "outputDirectory": "FrontEnd/dist",
-  "framework": "vite",
   "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.js"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"

@@ -1,6 +1,12 @@
 import mongoose from "mongoose";
 
+let isConnected = false;
+
 const connectDB = async () => {
+    if (isConnected || mongoose.connection.readyState >= 1) {
+        return;
+    }
+
     try {
         mongoose.connection.on('connected', () => {
             console.log("MongoDB connection established successfully.");
@@ -14,19 +20,25 @@ const connectDB = async () => {
         if (primaryUrl) {
             try {
                 console.log("Attempting MongoDB Atlas connection...");
-                await mongoose.connect(primaryUrl, { serverSelectionTimeoutMS: 5000 });
+                await mongoose.connect(primaryUrl, { 
+                    serverSelectionTimeoutMS: 5000,
+                    bufferCommands: false
+                });
+                isConnected = true;
                 return;
             } catch (err) {
-                console.warn("Primary MongoDB Atlas connection failed/timed out. Attempting local MongoDB connection...");
+                console.warn("Primary MongoDB Atlas connection failed/timed out. Attempting fallback...");
             }
         }
 
-        console.log("Connecting to local MongoDB fallback:", fallbackUrl);
-        await mongoose.connect(fallbackUrl, { serverSelectionTimeoutMS: 5000 });
+        if (fallbackUrl && !process.env.VERCEL) {
+            console.log("Connecting to local MongoDB fallback:", fallbackUrl);
+            await mongoose.connect(fallbackUrl, { serverSelectionTimeoutMS: 5000 });
+            isConnected = true;
+        }
 
     } catch (error) {
         console.error("MongoDB Connection Error:", error.message);
-        throw error;
     }
 };
 

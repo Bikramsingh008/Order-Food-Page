@@ -41,6 +41,12 @@ app.use(cors({
 
 app.use(express.json());
 
+// Ensure DB is connected before processing requests in serverless
+app.use(async (req, res, next) => {
+  await connectDB();
+  next();
+});
+
 // API Endpoints
 app.use('/api/user', userRouter)
 app.use('/api/product', productRouter)
@@ -84,4 +90,8 @@ app.use((req, res, next) => {
   res.send("YummyFood API is running. Build FrontEnd to serve the web UI from this port.");
 });
 
-app.listen(port, () => console.log("Single-link Server running on PORT : " + port))
+if (!process.env.VERCEL) {
+  app.listen(port, () => console.log("Single-link Server running on PORT : " + port));
+}
+
+export default app;
