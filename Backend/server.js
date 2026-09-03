@@ -1,6 +1,6 @@
 import express from 'express'
 import cors from 'cors'
-import 'dotenv/config'
+import dotenv from 'dotenv'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
@@ -12,6 +12,10 @@ import orderRouter from './routes/orderRoute.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+
+// Reliably load environment variables from Backend/.env and root .env
+dotenv.config({ path: path.join(__dirname, '.env') })
+dotenv.config()
 
 // App Config
 const app = express()
@@ -41,12 +45,6 @@ app.use(cors({
 
 app.use(express.json());
 
-// Ensure DB is connected before processing requests in serverless
-app.use(async (req, res, next) => {
-  await connectDB();
-  next();
-});
-
 // API Endpoints
 app.use('/api/user', userRouter)
 app.use('/api/product', productRouter)
@@ -57,7 +55,7 @@ app.get('/api/health', (req, res) => {
   res.json({ success: true, message: "YummyFood API is healthy & running" })
 })
 
-// Serve Built Frontend & Admin as a Single Unified Application
+// Serve Built Frontend & Admin as a Single Unified Application if dist folders exist
 const frontendDist = path.join(__dirname, '../FrontEnd/dist');
 const adminDist = path.join(__dirname, '../Admin/dist');
 
@@ -69,7 +67,7 @@ if (fs.existsSync(frontendDist)) {
   app.use(express.static(frontendDist));
 }
 
-// Fallback SPA routing for Express 5 compatibility
+// Fallback SPA routing
 app.use((req, res, next) => {
   if (req.method !== 'GET') {
     return next();
@@ -90,8 +88,4 @@ app.use((req, res, next) => {
   res.send("YummyFood API is running. Build FrontEnd to serve the web UI from this port.");
 });
 
-if (!process.env.VERCEL) {
-  app.listen(port, () => console.log("Single-link Server running on PORT : " + port));
-}
-
-export default app;
+app.listen(port, () => console.log("Server running on PORT : " + port))

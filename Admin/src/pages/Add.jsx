@@ -10,7 +10,7 @@ const Add = ({ token }) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
-  const [category, setCategory] = useState("Snacks");
+  const [category, setCategory] = useState("Starters & Snacks");
   const [type, setType] = useState("veg");
   const [subType, setSubType] = useState("veg");
 
@@ -70,7 +70,7 @@ const Add = ({ token }) => {
         setPrice("");
         setImage1(false);
         setImageUrl("");
-        setCategory("Snacks");
+        setCategory("Starters & Snacks");
         setType("veg");
         setSubType("veg");
         setCustomizations([
@@ -154,11 +154,12 @@ const Add = ({ token }) => {
             onChange={(e) => setCategory(e.target.value)}
             className="w-full px-3 py-2 border rounded-md min-h-[44px]"
           >
-            <option value="Snacks">Snacks</option>
-            <option value="Breakfast">Breakfast</option>
-            <option value="Lunch">Lunch</option>
-            <option value="Dinner">Dinner</option>
-            <option value="Drinks">Drinks</option>
+            <option value="Breakfast">🥞 Breakfast</option>
+            <option value="Starters & Snacks">🍟 Starters & Snacks</option>
+            <option value="Main Course">🍛 Main Course</option>
+            <option value="Rice & Biryani">🍚 Rice & Biryani</option>
+            <option value="Breads">🫓 Breads</option>
+            <option value="Beverages & Desserts">🥤 Beverages & Desserts</option>
           </select>
         </div>
 

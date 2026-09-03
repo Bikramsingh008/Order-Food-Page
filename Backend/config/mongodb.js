@@ -1,41 +1,31 @@
 import mongoose from "mongoose";
 
-let isConnected = false;
-
 const connectDB = async () => {
-    if (isConnected || mongoose.connection.readyState >= 1) {
-        return;
-    }
-
     try {
         mongoose.connection.on('connected', () => {
             console.log("MongoDB connection established successfully.");
         });
 
+        mongoose.connection.on('error', (err) => {
+            console.error("MongoDB connection error:", err.message);
+        });
+
         const uri = (process.env.MONGODB_URI || "").trim();
-        const cleanUri = uri.endsWith('/') ? uri.slice(0, -1) : uri;
-        const primaryUrl = cleanUri ? (cleanUri.includes('/yummy-food') ? cleanUri : `${cleanUri}/yummy-food`) : null;
         const fallbackUrl = "mongodb://127.0.0.1:27017/yummy-food";
 
-        if (primaryUrl) {
+        if (uri) {
             try {
-                console.log("Attempting MongoDB Atlas connection...");
-                await mongoose.connect(primaryUrl, { 
-                    serverSelectionTimeoutMS: 5000,
-                    bufferCommands: false
-                });
-                isConnected = true;
+                const targetUrl = uri.includes('/yummy-food') ? uri : `${uri.replace(/\/+$/, '')}/yummy-food`;
+                console.log("Connecting to MongoDB:", targetUrl.replace(/\/\/[^@]+@/, '//***:***@'));
+                await mongoose.connect(targetUrl, { serverSelectionTimeoutMS: 5000 });
                 return;
             } catch (err) {
-                console.warn("Primary MongoDB Atlas connection failed/timed out. Attempting fallback...");
+                console.warn("Primary MongoDB connection failed (" + err.message + "). Connecting to local MongoDB...");
             }
         }
 
-        if (fallbackUrl && !process.env.VERCEL) {
-            console.log("Connecting to local MongoDB fallback:", fallbackUrl);
-            await mongoose.connect(fallbackUrl, { serverSelectionTimeoutMS: 5000 });
-            isConnected = true;
-        }
+        console.log("Connecting to local MongoDB fallback:", fallbackUrl);
+        await mongoose.connect(fallbackUrl, { serverSelectionTimeoutMS: 5000 });
 
     } catch (error) {
         console.error("MongoDB Connection Error:", error.message);

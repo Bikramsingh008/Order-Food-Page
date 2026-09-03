@@ -10,10 +10,13 @@ const adminAuth = (req, res, next) => {
     }
 
     const token = authHeader.split(" ")[1]; // remove "Bearer"
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const jwtSecret = (process.env.JWT_SECRET || "bikramsingh08").trim();
+    const decoded = jwt.verify(token, jwtSecret);
 
-    // ✅ Check email (or role) from payload
-    if (decoded.email !== process.env.ADMIN_EMAIL) {
+    const adminEmail = (process.env.ADMIN_EMAIL || "admin@forever.com").trim();
+
+    // Check email or role from payload
+    if (decoded.role !== "admin" && decoded.email !== adminEmail) {
       return res
         .status(403)
         .json({ success: false, message: "Not Authorized, login again" });
@@ -21,7 +24,7 @@ const adminAuth = (req, res, next) => {
 
     next();
   } catch (error) {
-    console.log(error);
+    console.log("Admin Auth Error:", error.message);
     res.status(401).json({ success: false, message: error.message });
   }
 };

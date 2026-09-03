@@ -58,7 +58,7 @@ const BREAD_KEYWORDS = ["naan", "paratha", "roti", "laccha", "bhatura", "bread",
 const isBreadItem = (title = "") => BREAD_KEYWORDS.some(k => title.toLowerCase().includes(k));
 
 // ── Categories eligible for Half / Full portion ─────────────────────────────
-const HALF_FULL_CATEGORIES = ["Lunch", "Dinner"];
+const HALF_FULL_CATEGORIES = ["Lunch", "Dinner", "Main Course", "Rice & Biryani"];
 
 // ── Half/Full price multipliers ───────────────────────────────────────────────
 const PORTION_PRICES = {

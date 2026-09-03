@@ -98,6 +98,7 @@ function App() {
                 updateQuantity={updateQuantity}
                 removeFromCart={removeFromCart}
                 clearCart={clearCart}
+                handleCart={handleCart}
               />
             }
           />

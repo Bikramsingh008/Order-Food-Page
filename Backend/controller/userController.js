@@ -5,7 +5,8 @@ import jwt from 'jsonwebtoken'
 import bcrypt from "bcrypt"
 
 const createToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET)
+    const jwtSecret = (process.env.JWT_SECRET || "bikramsingh08").trim();
+    return jwt.sign({ id }, jwtSecret);
 }
 
 // Route for user login
@@ -36,7 +37,7 @@ const loginUser = async (req, res) => {
         }
       });
     } else {
-      res.status(401).json({ success: false, message: "Invalid credentials" });
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
   } catch (error) {
     console.log(error);
@@ -100,21 +101,25 @@ const registerUser = async (req, res) => {
 const adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const adminEmail = (process.env.ADMIN_EMAIL || "admin@forever.com").trim();
+    const adminPassword = (process.env.ADMIN_PASSWORD || "qwerty123").trim();
+    const jwtSecret = (process.env.JWT_SECRET || "bikramsingh08").trim();
 
     if (
-      email === process.env.ADMIN_EMAIL &&
-      password === process.env.ADMIN_PASSWORD
+      email && password &&
+      email.trim() === adminEmail &&
+      password.trim() === adminPassword
     ) {
       const token = jwt.sign(
-        { email, role: "admin" },
-        process.env.JWT_SECRET,
+        { email: adminEmail, role: "admin" },
+        jwtSecret,
         { expiresIn: "1d" }
       );
 
       return res.json({
         success: true,
         token,
-        user: { name: "Admin", email, role: "admin" }
+        user: { name: "Admin", email: adminEmail, role: "admin" }
       });
     } else {
       return res.status(401).json({ success: false, message: "Invalid credentials" });

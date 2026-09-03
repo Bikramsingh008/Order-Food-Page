@@ -5,7 +5,15 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import "./OurFood.css";
 import { API_URL } from "../utils/api";
 
-const categories = ["All", "Snacks", "Breakfast", "Lunch", "Dinner", "Drinks"];
+const CATEGORIES = [
+  { key: "All", label: "All", icon: "🍽️", gradient: "linear-gradient(135deg, #FF6B00, #FF8C3B)" },
+  { key: "Breakfast", label: "Breakfast", icon: "🥞", gradient: "linear-gradient(135deg, #F59E0B, #FCD34D)" },
+  { key: "Starters & Snacks", label: "Starters & Snacks", icon: "🍟", gradient: "linear-gradient(135deg, #EF4444, #F97316)" },
+  { key: "Main Course", label: "Main Course", icon: "🍛", gradient: "linear-gradient(135deg, #8B5CF6, #EC4899)" },
+  { key: "Rice & Biryani", label: "Rice & Biryani", icon: "🍚", gradient: "linear-gradient(135deg, #F59E0B, #D97706)" },
+  { key: "Breads", label: "Breads", icon: "🫓", gradient: "linear-gradient(135deg, #92400E, #D97706)" },
+  { key: "Beverages & Desserts", label: "Beverages & Desserts", icon: "🥤", gradient: "linear-gradient(135deg, #06B6D4, #3B82F6)" },
+];
 
 const OurFood = ({ handleCart }) => {
   const [products, setProducts] = useState([]);
@@ -17,13 +25,13 @@ const OurFood = ({ handleCart }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Parse query params on load (e.g., ?category=Breakfast or ?search=burger)
+  // Parse query params on load
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const catParam = params.get("category");
     const searchParam = params.get("search");
 
-    if (catParam && categories.includes(catParam)) {
+    if (catParam && CATEGORIES.find(c => c.key === catParam)) {
       setSelectedCategory(catParam);
     }
     if (searchParam) {
@@ -93,26 +101,25 @@ const OurFood = ({ handleCart }) => {
         </div>
       </div>
 
-      {/* Category Tabs Bar */}
+      {/* Category Tabs Bar — Beautiful Icon-Pill Design */}
       <div className="category-tabs-container">
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            className={`cat-tab-btn ${selectedCategory === cat ? "active" : ""}`}
-            onClick={() => {
-              setSelectedCategory(cat);
-              navigate(`/ourfood?category=${encodeURIComponent(cat)}`, { replace: true });
-            }}
-          >
-            {cat === "Snacks" && "🍟 "}
-            {cat === "Breakfast" && "🥞 "}
-            {cat === "Lunch" && "🍛 "}
-            {cat === "Dinner" && "🍱 "}
-            {cat === "Drinks" && "🥤 "}
-            {cat === "All" && "🍽️ "}
-            {cat}
-          </button>
-        ))}
+        {CATEGORIES.map((cat) => {
+          const isActive = selectedCategory === cat.key;
+          return (
+            <button
+              key={cat.key}
+              className={`cat-tab-btn ${isActive ? "active" : ""}`}
+              style={isActive ? { background: cat.gradient, borderColor: "transparent", color: "#fff", boxShadow: `0 6px 20px rgba(0,0,0,0.4)` } : {}}
+              onClick={() => {
+                setSelectedCategory(cat.key);
+                navigate(`/ourfood?category=${encodeURIComponent(cat.key)}`, { replace: true });
+              }}
+            >
+              <span className="cat-tab-icon">{cat.icon}</span>
+              <span className="cat-tab-label">{cat.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Filter Controls Row: Veg / Non-Veg / All */}

@@ -9,12 +9,16 @@ import {
   FaBox,
   FaSignOutAlt,
   FaChevronDown,
+  FaHome,
+  FaUtensils,
+  FaInfoCircle,
 } from "react-icons/fa";
-import { NavLink, Link, useNavigate } from "react-router-dom";
+import { NavLink, Link, useNavigate, useLocation } from "react-router-dom";
 import { getCartoonAvatar } from "../utils/avatar";
 
 const Header = ({ count }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const user = JSON.parse(localStorage.getItem("user") || "null");
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -31,6 +35,11 @@ const Header = ({ count }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -40,9 +49,9 @@ const Header = ({ count }) => {
   };
 
   const navLinks = [
-    { to: "/", label: "Home", end: true },
-    { to: "/ourfood", label: "Menu" },
-    { to: "/aboutus", label: "About" },
+    { to: "/", label: "Home", icon: <FaHome />, end: true },
+    { to: "/ourfood", label: "Menu", icon: <FaUtensils /> },
+    { to: "/aboutus", label: "About", icon: <FaInfoCircle /> },
   ];
 
   const userAvatarUrl = getCartoonAvatar(user);
@@ -60,7 +69,7 @@ const Header = ({ count }) => {
           </Link>
 
           {/* Desktop Nav */}
-          <nav>
+          <nav aria-label="Main navigation">
             <ul className="yf-nav">
               {navLinks.map(({ to, label, end }) => (
                 <li key={to}>
@@ -87,57 +96,39 @@ const Header = ({ count }) => {
 
           {/* Right actions */}
           <div className="yf-header-actions">
-            {/* Cart icon */}
-            <Link to="/cart" className="yf-cart-btn" aria-label="View Cart">
-              <FaShoppingCart />
-              {count > 0 && <span className="yf-cart-badge">{count}</span>}
-            </Link>
+            {/* Cart icon — hidden for admin */}
+            {user?.role !== "admin" && (
+              <Link to="/cart" className="yf-cart-btn" aria-label="View Cart">
+                <FaShoppingCart />
+                {count > 0 && <span className="yf-cart-badge">{count}</span>}
+              </Link>
+            )}
 
             {/* Auth section */}
             {!user ? (
-              <div style={{ display: "flex", gap: "8px" }}>
+              <div className="yf-auth-btn-wrap">
                 <Link
                   to="/signin"
-                  className="brand-btn"
-                  style={{ padding: "10px 22px", fontSize: "0.88rem" }}
+                  className="brand-btn yf-header-signin-btn"
+                  style={{ padding: "9px 20px", fontSize: "0.88rem" }}
                 >
                   Sign In
                 </Link>
               </div>
             ) : (
-              <div
-                ref={dropdownRef}
-                style={{ position: "relative" }}
-              >
+              <div ref={dropdownRef} style={{ position: "relative" }}>
                 {/* Cool Cartoon Avatar Chip Button */}
                 <button
                   type="button"
                   className="yf-user-chip"
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  style={{
-                    background: "rgba(255, 255, 255, 0.08)",
-                    border: "1px solid rgba(255, 255, 255, 0.15)",
-                    cursor: "pointer",
-                    padding: "4px 12px 4px 4px",
-                    borderRadius: "999px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    transition: "var(--transition)",
-                    fontFamily: "Inter, sans-serif",
-                  }}
+                  aria-expanded={dropdownOpen}
+                  aria-label="User profile menu"
                 >
                   <img
                     src={userAvatarUrl}
                     alt={user.name || "User Avatar"}
-                    style={{
-                      width: "34px",
-                      height: "34px",
-                      borderRadius: "50%",
-                      objectFit: "cover",
-                      background: "#111",
-                      border: "1px solid var(--brand-orange)",
-                    }}
+                    className="yf-avatar-img"
                   />
                   <span className="yf-user-name">
                     {user.role === "admin" ? "Admin" : user.name}
@@ -152,53 +143,12 @@ const Header = ({ count }) => {
                   />
                 </button>
 
-                {/* Profile Dropdown Menu containing My Orders & Logout */}
+                {/* Profile Dropdown Menu */}
                 {dropdownOpen && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: "48px",
-                      right: 0,
-                      width: "230px",
-                      background: "rgba(16, 16, 16, 0.96)",
-                      backdropFilter: "blur(20px)",
-                      border: "1px solid rgba(255, 255, 255, 0.12)",
-                      borderRadius: "var(--radius-md)",
-                      boxShadow: "0 12px 36px rgba(0, 0, 0, 0.7)",
-                      padding: "8px",
-                      zIndex: 1000,
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "4px",
-                      animation: "fadeIn 0.2s ease",
-                    }}
-                  >
-                    <div
-                      style={{
-                        padding: "10px 12px",
-                        borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontWeight: 700,
-                          fontSize: "0.92rem",
-                          color: "#FFF",
-                        }}
-                      >
-                        {user.name}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: "0.78rem",
-                          color: "var(--text-muted)",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                      >
-                        {user.email}
-                      </div>
+                  <div className="yf-profile-dropdown">
+                    <div className="dropdown-user-header">
+                      <div className="dropdown-user-name">{user.name}</div>
+                      <div className="dropdown-user-email">{user.email}</div>
                     </div>
 
                     <button
@@ -206,91 +156,39 @@ const Header = ({ count }) => {
                         setDropdownOpen(false);
                         navigate("/profile?tab=info");
                       }}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "10px",
-                        padding: "10px 12px",
-                        background: "transparent",
-                        border: "none",
-                        color: "#E0E0E0",
-                        fontSize: "0.9rem",
-                        fontWeight: 600,
-                        borderRadius: "var(--radius-sm)",
-                        cursor: "pointer",
-                        width: "100%",
-                        textAlign: "left",
-                      }}
-                      onMouseOver={(e) =>
-                        (e.currentTarget.style.background =
-                          "rgba(255, 107, 0, 0.12)")
-                      }
-                      onMouseOut={(e) =>
-                        (e.currentTarget.style.background = "transparent")
-                      }
+                      className="dropdown-menu-item"
                     >
-                      <FaUser style={{ color: "var(--brand-orange)" }} /> My
-                      Profile Details
+                      <FaUser style={{ color: "var(--brand-orange)" }} /> My Profile Details
                     </button>
 
                     {user.role !== "admin" && (
                       <button
                         onClick={() => {
                           setDropdownOpen(false);
-                          navigate("/profile?tab=orders");
+                          navigate("/myorders");
                         }}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "10px",
-                          padding: "10px 12px",
-                          background: "transparent",
-                          border: "none",
-                          color: "#E0E0E0",
-                          fontSize: "0.9rem",
-                          fontWeight: 600,
-                          borderRadius: "var(--radius-sm)",
-                          cursor: "pointer",
-                          width: "100%",
-                          textAlign: "left",
-                        }}
-                        onMouseOver={(e) =>
-                          (e.currentTarget.style.background =
-                            "rgba(255, 107, 0, 0.12)")
-                        }
-                        onMouseOut={(e) =>
-                          (e.currentTarget.style.background = "transparent")
-                        }
+                        className="dropdown-menu-item"
                       >
-                        <FaBox style={{ color: "var(--brand-orange)" }} /> My
-                        Orders & Live Status
+                        <FaBox style={{ color: "var(--brand-orange)" }} /> My Orders & Live Status
                       </button>
                     )}
 
-                    <div
-                      style={{
-                        borderTop: "1px solid rgba(255, 255, 255, 0.08)",
-                        marginTop: "4px",
-                        paddingTop: "4px",
-                      }}
-                    >
+                    {user.role === "admin" && (
+                      <button
+                        onClick={() => {
+                          setDropdownOpen(false);
+                          navigate("/admin");
+                        }}
+                        className="dropdown-menu-item"
+                      >
+                        <FaUserShield style={{ color: "#EF4444" }} /> Admin Dashboard
+                      </button>
+                    )}
+
+                    <div className="dropdown-divider">
                       <button
                         onClick={handleLogout}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "10px",
-                          padding: "10px 12px",
-                          background: "rgba(239, 68, 68, 0.1)",
-                          border: "1px solid rgba(239, 68, 68, 0.2)",
-                          color: "#EF4444",
-                          fontSize: "0.9rem",
-                          fontWeight: 700,
-                          borderRadius: "var(--radius-sm)",
-                          cursor: "pointer",
-                          width: "100%",
-                          textAlign: "left",
-                        }}
+                        className="dropdown-logout-btn"
                       >
                         <FaSignOutAlt /> Logout
                       </button>
@@ -300,161 +198,210 @@ const Header = ({ count }) => {
               </div>
             )}
 
-            {/* Mobile toggle */}
+            {/* Mobile hamburger toggle */}
             <button
               className="yf-mobile-toggle"
               onClick={() => setMenuOpen(!menuOpen)}
-              aria-label="Toggle menu"
+              aria-label="Toggle navigation drawer"
             >
               {menuOpen ? <FaTimes /> : <FaBars />}
             </button>
           </div>
         </div>
 
-        {/* Mobile menu */}
+        {/* Mobile Slide-Out Drawer Menu */}
         {menuOpen && (
-          <div
-            style={{
-              position: "fixed",
-              top: "72px",
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: "rgba(10, 10, 10, 0.98)",
-              backdropFilter: "blur(20px)",
-              zIndex: 999,
-              display: "flex",
-              flexDirection: "column",
-              padding: "24px",
-              gap: "12px",
-              overflowY: "auto",
-              maxHeight: "calc(100vh - 72px)",
-              animation: "fadeIn 0.2s ease",
-            }}
-          >
-            {navLinks.map(({ to, label, end }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={end}
-                onClick={() => setMenuOpen(false)}
-                style={({ isActive }) => ({
-                  padding: "16px 20px",
-                  fontSize: "1.1rem",
-                  fontWeight: 600,
-                  color: isActive ? "var(--brand-orange)" : "var(--text-white)",
-                  background: isActive
-                    ? "rgba(255, 107, 0, 0.1)"
-                    : "rgba(255, 255, 255, 0.04)",
-                  borderRadius: "var(--radius-sm)",
-                  textDecoration: "none",
-                  border: `1px solid ${
-                    isActive
-                      ? "rgba(255, 107, 0, 0.2)"
-                      : "rgba(255, 255, 255, 0.06)"
-                  }`,
-                })}
-              >
-                {label}
-              </NavLink>
-            ))}
-
-            {user && (
-              <>
-                <NavLink
-                  to="/profile?tab=info"
+          <div className="yf-mobile-drawer-backdrop" onClick={() => setMenuOpen(false)}>
+            <div
+              className="yf-mobile-drawer"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mobile-drawer-header">
+                <div className="yf-logo">
+                  <div className="yf-logo-icon">🍔</div>
+                  <span className="yf-logo-text">
+                    Yummy<span>Food</span>
+                  </span>
+                </div>
+                <button
+                  className="close-drawer-btn"
                   onClick={() => setMenuOpen(false)}
-                  style={{
-                    padding: "16px 20px",
-                    fontSize: "1.1rem",
-                    fontWeight: 600,
-                    color: "var(--text-white)",
-                    background: "rgba(255, 255, 255, 0.04)",
-                    borderRadius: "var(--radius-sm)",
-                    textDecoration: "none",
-                  }}
+                  aria-label="Close menu"
                 >
-                  👤 My Profile & Cartoon Avatar
-                </NavLink>
-                {user.role !== "admin" && (
+                  <FaTimes />
+                </button>
+              </div>
+
+              {user && (
+                <div className="drawer-user-card">
+                  <img
+                    src={userAvatarUrl}
+                    alt={user.name}
+                    className="drawer-avatar"
+                  />
+                  <div>
+                    <div className="drawer-user-name">{user.name}</div>
+                    <div className="drawer-user-email">{user.email}</div>
+                  </div>
+                </div>
+              )}
+
+              <div className="drawer-nav-list">
+                {navLinks.map(({ to, label, icon, end }) => (
                   <NavLink
-                    to="/profile?tab=orders"
+                    key={to}
+                    to={to}
+                    end={end}
                     onClick={() => setMenuOpen(false)}
-                    style={{
-                      padding: "16px 20px",
-                      fontSize: "1.1rem",
-                      fontWeight: 600,
-                      color: "var(--text-white)",
-                      background: "rgba(255, 255, 255, 0.04)",
-                      borderRadius: "var(--radius-sm)",
-                      textDecoration: "none",
-                    }}
+                    className={({ isActive }) =>
+                      `drawer-nav-item ${isActive ? "active" : ""}`
+                    }
                   >
-                    📦 My Orders & Live Tracking
+                    <span className="drawer-nav-icon">{icon}</span>
+                    <span>{label}</span>
+                  </NavLink>
+                ))}
+
+                <NavLink
+                  to="/cart"
+                  onClick={() => setMenuOpen(false)}
+                  className={({ isActive }) =>
+                    `drawer-nav-item ${isActive ? "active" : ""}`
+                  }
+                >
+                  <span className="drawer-nav-icon"><FaShoppingCart /></span>
+                  <span>My Cart</span>
+                  {count > 0 && <span className="drawer-badge">{count} items</span>}
+                </NavLink>
+
+                {user && (
+                  <>
+                    <NavLink
+                      to="/profile?tab=info"
+                      onClick={() => setMenuOpen(false)}
+                      className="drawer-nav-item"
+                    >
+                      <span className="drawer-nav-icon"><FaUser /></span>
+                      <span>My Profile</span>
+                    </NavLink>
+                    {user.role !== "admin" && (
+                      <NavLink
+                        to="/myorders"
+                        onClick={() => setMenuOpen(false)}
+                        className="drawer-nav-item"
+                      >
+                        <span className="drawer-nav-icon"><FaBox /></span>
+                        <span>My Orders & Tracking</span>
+                      </NavLink>
+                    )}
+                  </>
+                )}
+
+                {user?.role === "admin" && (
+                  <NavLink
+                    to="/admin"
+                    onClick={() => setMenuOpen(false)}
+                    className="drawer-nav-item admin-item"
+                  >
+                    <span className="drawer-nav-icon"><FaUserShield /></span>
+                    <span>Admin Dashboard</span>
                   </NavLink>
                 )}
-              </>
-            )}
+              </div>
 
-            {user?.role === "admin" && (
-              <NavLink
-                to="/admin"
-                onClick={() => setMenuOpen(false)}
-                style={{
-                  padding: "16px 20px",
-                  fontSize: "1.1rem",
-                  fontWeight: 700,
-                  color: "#EF4444",
-                  background: "rgba(239, 68, 68, 0.12)",
-                  borderRadius: "var(--radius-sm)",
-                  textDecoration: "none",
-                  border: "1px solid rgba(239, 68, 68, 0.3)",
-                }}
-              >
-                ⚙️ Admin Dashboard
-              </NavLink>
-            )}
-
-            {!user ? (
-              <Link
-                to="/signin"
-                className="brand-btn"
-                onClick={() => setMenuOpen(false)}
-                style={{
-                  marginTop: "16px",
-                  textAlign: "center",
-                  justifyContent: "center",
-                }}
-              >
-                Sign In
-              </Link>
-            ) : (
-              <button
-                onClick={() => {
-                  handleLogout();
-                  setMenuOpen(false);
-                }}
-                style={{
-                  marginTop: "16px",
-                  padding: "16px",
-                  background: "rgba(239, 68, 68, 0.15)",
-                  color: "#EF4444",
-                  borderRadius: "var(--radius-sm)",
-                  border: "1px solid rgba(239, 68, 68, 0.3)",
-                  fontSize: "1rem",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  fontFamily: "Inter, sans-serif",
-                }}
-              >
-                Logout
-              </button>
-            )}
+              <div className="drawer-footer">
+                {!user ? (
+                  <Link
+                    to="/signin"
+                    className="brand-btn drawer-btn"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    Sign In / Register
+                  </Link>
+                ) : (
+                  <button
+                    onClick={handleLogout}
+                    className="drawer-logout-btn"
+                  >
+                    <FaSignOutAlt /> Log Out
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </header>
 
-      {/* Floating cart pill (side) */}
+      {/* Modern Persistent Mobile Bottom Navigation Bar */}
+      <nav className="yf-bottom-nav" aria-label="Mobile bottom navigation">
+        <NavLink
+          to="/"
+          end
+          className={({ isActive }) =>
+            `bottom-nav-item ${isActive ? "active" : ""}`
+          }
+        >
+          <FaHome className="bottom-nav-icon" />
+          <span className="bottom-nav-label">Home</span>
+        </NavLink>
+
+        <NavLink
+          to="/ourfood"
+          className={({ isActive }) =>
+            `bottom-nav-item ${isActive ? "active" : ""}`
+          }
+        >
+          <FaUtensils className="bottom-nav-icon" />
+          <span className="bottom-nav-label">Menu</span>
+        </NavLink>
+
+        <NavLink
+          to="/cart"
+          className={({ isActive }) =>
+            `bottom-nav-item bottom-nav-cart ${isActive ? "active" : ""}`
+          }
+        >
+          <div className="bottom-nav-cart-wrapper">
+            <FaShoppingCart className="bottom-nav-icon" />
+            {count > 0 && (
+              <span className="bottom-nav-cart-badge">{count}</span>
+            )}
+          </div>
+          <span className="bottom-nav-label">Cart</span>
+        </NavLink>
+
+        <NavLink
+          to={user ? "/myorders" : "/signin"}
+          className={({ isActive }) =>
+            `bottom-nav-item ${isActive ? "active" : ""}`
+          }
+        >
+          <FaBox className="bottom-nav-icon" />
+          <span className="bottom-nav-label">Orders</span>
+        </NavLink>
+
+        <NavLink
+          to={user ? "/profile" : "/signin"}
+          className={({ isActive }) =>
+            `bottom-nav-item ${isActive ? "active" : ""}`
+          }
+        >
+          {user ? (
+            <img
+              src={userAvatarUrl}
+              alt="Profile"
+              className="bottom-nav-avatar"
+            />
+          ) : (
+            <FaUser className="bottom-nav-icon" />
+          )}
+          <span className="bottom-nav-label">
+            {user ? "Account" : "Sign In"}
+          </span>
+        </NavLink>
+      </nav>
+
+      {/* Floating cart pill (hidden on mobile, visible on desktop/tablets) */}
       <Link to="/cart" className="yf-cart-float" aria-label="View Floating Cart">
         <span className="yf-cart-float-badge">{count}</span>
         <FaShoppingCart size={20} color="#FF6B00" />

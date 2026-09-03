@@ -36,18 +36,50 @@ const AdminPanel = () => {
     subType: "",
     imageUrl: "",
   });
+  const [editCustomizations, setEditCustomizations] = useState([]);
+  const handleEditCustRow = () => {
+    setEditCustomizations([
+      ...editCustomizations,
+      { name: "", defaultQty: 1, removable: true, extraPrice: 0 }
+    ]);
+  };
+  const handleEditCustChange = (idx, field, val) => {
+    const updated = [...editCustomizations];
+    updated[idx][field] = val;
+    setEditCustomizations(updated);
+  };
+  const handleRemoveEditCust = (idx) => {
+    setEditCustomizations(editCustomizations.filter((_, i) => i !== idx));
+  };
 
-  // Add Product Modal State
+  // Add Product Inline Form State
   const [showAddModal, setShowAddModal] = useState(false);
   const [addForm, setAddForm] = useState({
     title: "",
     price: "",
     description: "",
-    category: "Snacks",
+    category: "Starters & Snacks",
     type: "veg",
     subType: "",
     imageUrl: "",
   });
+
+  // Customization builder for add form
+  const [addCustomizations, setAddCustomizations] = useState([]);
+  const handleAddCustRow = () => {
+    setAddCustomizations([
+      ...addCustomizations,
+      { name: "", defaultQty: 1, removable: true, extraPrice: 0 }
+    ]);
+  };
+  const handleAddCustChange = (idx, field, val) => {
+    const updated = [...addCustomizations];
+    updated[idx][field] = val;
+    setAddCustomizations(updated);
+  };
+  const handleRemoveAddCust = (idx) => {
+    setAddCustomizations(addCustomizations.filter((_, i) => i !== idx));
+  };
 
   // Search filter
   const [searchTerm, setSearchTerm] = useState("");
@@ -125,11 +157,12 @@ const AdminPanel = () => {
       title: prod.title || "",
       price: prod.price || "",
       description: prod.description || "",
-      category: prod.category || "Snacks",
+      category: prod.category || "Starters & Snacks",
       type: prod.type || "veg",
       subType: prod.subType || "",
       imageUrl: prod.img?.[0] || "",
     });
+    setEditCustomizations(prod.customizations ? [...prod.customizations] : []);
   };
 
   // Submit Product Edit
@@ -146,6 +179,7 @@ const AdminPanel = () => {
         type: editForm.type,
         subType: editForm.subType,
         imageUrl: editForm.imageUrl,
+        customizations: editCustomizations.filter(c => c.name.trim() !== ""),
       };
 
       const res = await axios.post(
@@ -182,6 +216,7 @@ const AdminPanel = () => {
         type: addForm.type,
         subType: addForm.subType,
         imageUrl: addForm.imageUrl,
+        customizations: addCustomizations.filter(c => c.name.trim() !== ""),
       };
 
       const res = await axios.post(
@@ -197,11 +232,12 @@ const AdminPanel = () => {
           title: "",
           price: "",
           description: "",
-          category: "Snacks",
+          category: "Starters & Snacks",
           type: "veg",
           subType: "",
           imageUrl: "",
         });
+        setAddCustomizations([]);
       } else {
         toast.error(res.data.message || "Failed to add item");
       }
@@ -349,8 +385,8 @@ const AdminPanel = () => {
             </div>
 
             {/* Recent Orders Stream */}
-            <h3 style={{ marginBottom: "16px", fontSize: "1.2rem" }}>
-              ⚡ Recent Live Customer Orders
+            <h3 style={{ marginBottom: "16px", fontSize: "1.2rem", display: "flex", alignItems: "center", gap: "8px" }}>
+              <span>⚡</span> Recent Live Customer Orders
             </h3>
             {orders.length === 0 ? (
               <p style={{ color: "var(--text-muted)" }}>
@@ -358,45 +394,146 @@ const AdminPanel = () => {
               </p>
             ) : (
               <div className="admin-table-container">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Order ID</th>
-                      <th>Customer Details</th>
-                      <th>Items Ordered</th>
-                      <th>Amount</th>
-                      <th>Payment</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orders.slice(0, 5).map((o) => (
-                      <tr key={o._id}>
-                        <td>
-                          <b>#{o._id?.substring(o._id.length - 6)}</b>
-                        </td>
-                        <td>
-                          <div>
-                            <b>
-                              {o.address?.firstName} {o.address?.lastName}
-                            </b>
-                          </div>
-                          <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                            📞 {o.address?.phone || "N/A"}
-                          </span>
-                        </td>
-                        <td>
-                          {o.items?.map((it, i) => (
-                            <div key={i} style={{ fontSize: "0.85rem" }}>
-                              • {it.title} (x{it.quantity})
+                {/* Desktop & Tablet Table View */}
+                <div className="admin-desktop-table-view">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Order ID</th>
+                        <th>Customer Details</th>
+                        <th>Items Ordered</th>
+                        <th>Amount</th>
+                        <th>Payment</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {orders.slice(0, 5).map((o) => (
+                        <tr key={o._id}>
+                          <td>
+                            <b>#{o._id?.substring(o._id.length - 6)}</b>
+                            <div style={{ fontSize: "0.76rem", color: "var(--text-muted)", marginTop: "2px" }}>
+                              {new Date(o.date || o.createdAt).toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit' })}
                             </div>
-                          ))}
-                        </td>
-                        <td>
-                          <b>₹{o.amount}</b>
-                        </td>
-                        <td>{o.paymentMethod || "COD"}</td>
-                        <td>
+                          </td>
+                          <td>
+                            <div>
+                              <b>
+                                {o.address?.firstName} {o.address?.lastName}
+                              </b>
+                            </div>
+                            <span style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                              📞 {o.address?.phone || "N/A"}
+                            </span>
+                          </td>
+                          <td>
+                            {o.items?.map((it, i) => (
+                              <div key={i} style={{ fontSize: "0.85rem", marginBottom: "3px" }}>
+                                • {it.title} <b style={{ color: "var(--brand-orange)" }}>(x{it.quantity})</b>
+                                {it.customizationSummary && (
+                                  <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", display: "block", marginLeft: "10px" }}>
+                                    {it.customizationSummary}
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </td>
+                          <td>
+                            <b style={{ color: "var(--brand-orange)", fontSize: "1.05rem" }}>₹{o.amount}</b>
+                          </td>
+                          <td>
+                            <span className="admin-payment-tag">{o.paymentMethod || "COD"}</span>
+                          </td>
+                          <td>
+                            <select
+                              className={`status-select ${
+                                o.status === "Delivered"
+                                  ? "delivered"
+                                  : o.status === "Out for Delivery"
+                                  ? "out-delivery"
+                                  : "processing"
+                              }`}
+                              value={o.status || "Food Processing"}
+                              onChange={(e) =>
+                                handleStatusUpdate(o._id, e.target.value)
+                              }
+                            >
+                              <option value="Food Processing">Food Processing</option>
+                              <option value="Out for Delivery">Out for Delivery</option>
+                              <option value="Delivered">Delivered</option>
+                              <option value="Cancelled">Cancelled</option>
+                            </select>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Responsive Order Cards View */}
+                <div className="admin-mobile-cards-view">
+                  {orders.slice(0, 5).map((o) => (
+                    <div key={o._id} className="admin-mobile-order-card">
+                      <div className="admin-card-header">
+                        <div>
+                          <span className="admin-card-id">#{o._id?.substring(o._id.length - 6)}</span>
+                          <span className="admin-card-date">
+                            {new Date(o.date || o.createdAt).toLocaleString("en-IN", {
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                        <span
+                          className={`admin-status-pill ${
+                            o.status === "Delivered"
+                              ? "delivered"
+                              : o.status === "Out for Delivery"
+                              ? "out-delivery"
+                              : "processing"
+                          }`}
+                        >
+                          {o.status || "Food Processing"}
+                        </span>
+                      </div>
+
+                      <div className="admin-card-customer">
+                        <div className="admin-card-cust-name">
+                          👤 {o.address?.firstName} {o.address?.lastName}
+                        </div>
+                        {o.address?.phone && (
+                          <a href={`tel:${o.address.phone}`} className="admin-card-phone">
+                            📞 {o.address.phone}
+                          </a>
+                        )}
+                        {o.address?.street && (
+                          <div className="admin-card-address">
+                            📍 {o.address.street}, {o.address.city}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="admin-card-items">
+                        <div className="admin-card-items-title">
+                          Ordered Dishes ({o.items?.length || 0}):
+                        </div>
+                        {o.items?.map((it, idx) => (
+                          <div key={idx} className="admin-card-item-row">
+                            <span>• {it.title} <b style={{ color: "var(--brand-orange)" }}>(x{it.quantity})</b></span>
+                            <span>₹{(it.itemPrice || it.price) * it.quantity}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="admin-card-footer">
+                        <div className="admin-card-financials">
+                          <span className="admin-card-total">₹{o.amount}</span>
+                          <span className="admin-payment-tag">{o.paymentMethod || "COD"}</span>
+                        </div>
+                        <div className="admin-card-status-control">
+                          <label>Status:</label>
                           <select
                             className={`status-select ${
                               o.status === "Delivered"
@@ -415,11 +552,11 @@ const AdminPanel = () => {
                             <option value="Delivered">Delivered</option>
                             <option value="Cancelled">Cancelled</option>
                           </select>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -432,17 +569,171 @@ const AdminPanel = () => {
               <div>
                 <h1 className="admin-page-title">🍔 Manage Catalog Products</h1>
                 <p style={{ color: "var(--text-muted)", marginTop: "4px" }}>
-                  Edit name, price, category, veg/non-veg status, and images for all 57+ dishes.
+                  Edit name, price, category, veg/non-veg status, and images for all dishes.
                 </p>
               </div>
 
               <button
                 className="brand-btn"
-                onClick={() => setShowAddModal(true)}
+                onClick={() => setShowAddModal(!showAddModal)}
               >
-                <FaPlus /> Add New Dish
+                <FaPlus /> {showAddModal ? "Cancel" : "Add New Dish"}
               </button>
             </div>
+
+            {/* ─── INLINE ADD DISH FORM ─────────────────────────────────────── */}
+            {showAddModal && (
+              <div className="admin-add-form-inline">
+                <div className="admin-add-form-header">
+                  <span>✨ Add New Food Item to Menu</span>
+                </div>
+                <form onSubmit={handleAddSubmit} className="admin-add-form-body">
+                  <div className="admin-add-form-grid">
+                    {/* Title */}
+                    <div className="form-group">
+                      <label>Dish Name / Title</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Paneer Tikka Roll"
+                        value={addForm.title}
+                        onChange={(e) => setAddForm({ ...addForm, title: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    {/* Price */}
+                    <div className="form-group">
+                      <label>Price (₹)</label>
+                      <input
+                        type="number"
+                        placeholder="180"
+                        value={addForm.price}
+                        onChange={(e) => setAddForm({ ...addForm, price: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    {/* Category */}
+                    <div className="form-group">
+                      <label>Category</label>
+                      <select
+                        value={addForm.category}
+                        onChange={(e) => setAddForm({ ...addForm, category: e.target.value })}
+                      >
+                        <option value="Breakfast">🥞 Breakfast</option>
+                        <option value="Starters & Snacks">🍟 Starters & Snacks</option>
+                        <option value="Main Course">🍛 Main Course</option>
+                        <option value="Rice & Biryani">🍚 Rice & Biryani</option>
+                        <option value="Breads">🫓 Breads</option>
+                        <option value="Beverages & Desserts">🥤 Beverages & Desserts</option>
+                      </select>
+                    </div>
+
+                    {/* Dietary Type */}
+                    <div className="form-group">
+                      <label>Dietary Type</label>
+                      <select
+                        value={addForm.type}
+                        onChange={(e) => setAddForm({ ...addForm, type: e.target.value })}
+                      >
+                        <option value="veg">🟢 Pure Veg</option>
+                        <option value="non-veg">🔴 Non-Veg</option>
+                      </select>
+                    </div>
+
+                    {/* Image URL */}
+                    <div className="form-group full-width">
+                      <label>Image URL (Unsplash or direct link)</label>
+                      <input
+                        type="text"
+                        placeholder="https://images.unsplash.com/..."
+                        value={addForm.imageUrl}
+                        onChange={(e) => setAddForm({ ...addForm, imageUrl: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    {/* Description */}
+                    <div className="form-group full-width">
+                      <label>Description</label>
+                      <textarea
+                        rows={3}
+                        placeholder="Describe the dish, ingredients, and taste..."
+                        value={addForm.description}
+                        onChange={(e) => setAddForm({ ...addForm, description: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Customizations Builder */}
+                  <div className="admin-cust-builder">
+                    <div className="admin-cust-builder-header">
+                      <div>
+                        <span className="cust-builder-title">🥗 Customizable Ingredients & Add-ons</span>
+                        <p className="cust-builder-subtitle">These appear as user-adjustable items in the menu. Leave empty if no customizations.</p>
+                      </div>
+                      <button type="button" className="admin-cust-add-btn" onClick={handleAddCustRow}>
+                        + Add Ingredient
+                      </button>
+                    </div>
+
+                    {addCustomizations.length === 0 && (
+                      <div className="admin-cust-empty">
+                        No customizations — users will see "Standard Recipe". Click "+ Add Ingredient" to add options.
+                      </div>
+                    )}
+
+                    <div className="admin-cust-rows">
+                      {addCustomizations.map((item, idx) => (
+                        <div key={idx} className="admin-cust-row">
+                          <input
+                            type="text"
+                            placeholder="Ingredient name (e.g. Cheese Slice)"
+                            value={item.name}
+                            onChange={(e) => handleAddCustChange(idx, "name", e.target.value)}
+                            className="cust-row-name"
+                            required
+                          />
+                          <div className="cust-row-fields">
+                            <label>Qty:
+                              <input
+                                type="number"
+                                value={item.defaultQty}
+                                min={0}
+                                onChange={(e) => handleAddCustChange(idx, "defaultQty", Number(e.target.value))}
+                                className="cust-row-num"
+                              />
+                            </label>
+                            <label>Extra ₹:
+                              <input
+                                type="number"
+                                value={item.extraPrice}
+                                min={0}
+                                onChange={(e) => handleAddCustChange(idx, "extraPrice", Number(e.target.value))}
+                                className="cust-row-num"
+                              />
+                            </label>
+                            <label className="cust-row-check">
+                              <input
+                                type="checkbox"
+                                checked={item.removable}
+                                onChange={(e) => handleAddCustChange(idx, "removable", e.target.checked)}
+                              />
+                              Removable
+                            </label>
+                            <button type="button" className="cust-row-remove" onClick={() => handleRemoveAddCust(idx)}>✕</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button type="submit" className="brand-btn admin-add-form-submit">
+                    <FaPlus /> Add Dish to Menu
+                  </button>
+                </form>
+              </div>
+            )}
 
             {/* Search Filter */}
             <div style={{ marginBottom: "20px", maxWidth: "400px" }}>
@@ -457,125 +748,152 @@ const AdminPanel = () => {
             </div>
 
             <div className="admin-table-container">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Image</th>
-                    <th>Dish Title</th>
-                    <th>Category</th>
-                    <th>Diet Type</th>
-                    <th>Price</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredProducts.map((p) => (
-                    <tr key={p._id}>
-                      <td>
-                        <div style={{ position: "relative" }}>
-                          <img
-                            src={p.img?.[0]}
-                            alt={p.title}
-                            style={{
-                              width: "84px",
-                              height: "84px",
-                              borderRadius: "12px",
-                              objectFit: "cover",
-                              border: "2px solid rgba(255, 107, 0, 0.4)",
-                              boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
-                              transition: "transform 0.25s ease, z-index 0.2s ease",
-                              cursor: "pointer",
-                            }}
-                            onMouseOver={(e) => {
-                              e.currentTarget.style.transform = "scale(2.4)";
-                              e.currentTarget.style.zIndex = "100";
-                              e.currentTarget.style.boxShadow = "0 12px 32px rgba(0,0,0,0.95)";
-                            }}
-                            onMouseOut={(e) => {
-                              e.currentTarget.style.transform = "scale(1)";
-                              e.currentTarget.style.zIndex = "1";
-                              e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.5)";
-                            }}
-                          />
-                        </div>
-                      </td>
-                      <td>
-                        <b>{p.title}</b>
-                        <div
-                          style={{
-                            fontSize: "0.78rem",
-                            color: "var(--text-muted)",
-                            maxWidth: "240px",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {p.description}
-                        </div>
-                      </td>
-                      <td>
-                        <span
-                          style={{
-                            background: "rgba(255,107,0,0.12)",
-                            color: "var(--brand-orange)",
-                            padding: "4px 10px",
-                            borderRadius: "999px",
-                            fontSize: "0.8rem",
-                            fontWeight: 600,
-                          }}
-                        >
-                          {p.category}
-                        </span>
-                      </td>
-                      <td>
-                        {p.type === "non-veg" ? (
-                          <span className="badge-nonveg">● Non-Veg</span>
-                        ) : (
-                          <span className="badge-veg">● Pure Veg</span>
-                        )}
-                      </td>
-                      <td>
-                        <b style={{ color: "var(--brand-orange)" }}>
-                          ₹{Number(p.price).toFixed(2)}
-                        </b>
-                      </td>
-                      <td>
-                        <div style={{ display: "flex", gap: "10px" }}>
-                          <button
-                            onClick={() => openEditModal(p)}
-                            style={{
-                              padding: "8px 12px",
-                              background: "rgba(59,130,246,0.15)",
-                              color: "#3B82F6",
-                              border: "1px solid rgba(59,130,246,0.3)",
-                              borderRadius: "8px",
-                              cursor: "pointer",
-                              fontWeight: 600,
-                            }}
-                          >
-                            <FaEdit /> Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteProduct(p._id, p.title)}
-                            style={{
-                              padding: "8px 12px",
-                              background: "rgba(239,68,68,0.15)",
-                              color: "#EF4444",
-                              border: "1px solid rgba(239,68,68,0.3)",
-                              borderRadius: "8px",
-                              cursor: "pointer",
-                              fontWeight: 600,
-                            }}
-                          >
-                            <FaTrash /> Delete
-                          </button>
-                        </div>
-                      </td>
+              {/* Desktop Table View */}
+              <div className="admin-desktop-table-view">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Image</th>
+                      <th>Dish Title</th>
+                      <th>Category</th>
+                      <th>Diet Type</th>
+                      <th>Price</th>
+                      <th>Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {filteredProducts.map((p) => (
+                      <tr key={p._id}>
+                        <td>
+                          <div style={{ position: "relative" }}>
+                            <img
+                              src={p.img?.[0]}
+                              alt={p.title}
+                              style={{
+                                width: "70px",
+                                height: "70px",
+                                borderRadius: "10px",
+                                objectFit: "cover",
+                                border: "1.5px solid rgba(255, 107, 0, 0.4)",
+                              }}
+                            />
+                          </div>
+                        </td>
+                        <td>
+                          <b>{p.title}</b>
+                          <div
+                            style={{
+                              fontSize: "0.78rem",
+                              color: "var(--text-muted)",
+                              maxWidth: "240px",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {p.description}
+                          </div>
+                        </td>
+                        <td>
+                          <span
+                            style={{
+                              background: "rgba(255,107,0,0.12)",
+                              color: "var(--brand-orange)",
+                              padding: "4px 10px",
+                              borderRadius: "999px",
+                              fontSize: "0.8rem",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {p.category}
+                          </span>
+                        </td>
+                        <td>
+                          {p.type === "non-veg" ? (
+                            <span className="badge-nonveg">● Non-Veg</span>
+                          ) : (
+                            <span className="badge-veg">● Pure Veg</span>
+                          )}
+                        </td>
+                        <td>
+                          <b style={{ color: "var(--brand-orange)" }}>
+                            ₹{Number(p.price).toFixed(2)}
+                          </b>
+                        </td>
+                        <td>
+                          <div style={{ display: "flex", gap: "10px" }}>
+                            <button
+                              onClick={() => openEditModal(p)}
+                              style={{
+                                padding: "8px 12px",
+                                background: "rgba(59,130,246,0.15)",
+                                color: "#3B82F6",
+                                border: "1px solid rgba(59,130,246,0.3)",
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                fontWeight: 600,
+                              }}
+                            >
+                              <FaEdit /> Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteProduct(p._id, p.title)}
+                              style={{
+                                padding: "8px 12px",
+                                background: "rgba(239,68,68,0.15)",
+                                color: "#EF4444",
+                                border: "1px solid rgba(239,68,68,0.3)",
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                fontWeight: 600,
+                              }}
+                            >
+                              <FaTrash /> Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Product Cards View */}
+              <div className="admin-mobile-cards-view">
+                {filteredProducts.map((p) => (
+                  <div key={p._id} className="admin-mobile-product-card">
+                    <img
+                      src={p.img?.[0] || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c"}
+                      alt={p.title}
+                      className="admin-mobile-prod-img"
+                    />
+                    <div className="admin-mobile-prod-info">
+                      <div className="admin-mobile-prod-title">{p.title}</div>
+                      <div className="admin-mobile-prod-meta">
+                        <span className="admin-payment-tag">{p.category}</span>
+                        <span className={p.type === "non-veg" ? "badge-nonveg" : "badge-veg"}>
+                          {p.type === "non-veg" ? "● Non-Veg" : "● Veg"}
+                        </span>
+                      </div>
+                      <div className="admin-mobile-prod-price">₹{Number(p.price).toFixed(2)}</div>
+                      <div className="admin-mobile-prod-actions">
+                        <button
+                          onClick={() => openEditModal(p)}
+                          className="admin-prod-btn edit"
+                        >
+                          <FaEdit /> Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProduct(p._id, p.title)}
+                          className="admin-prod-btn delete"
+                        >
+                          <FaTrash /> Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -602,87 +920,173 @@ const AdminPanel = () => {
               </div>
             ) : (
               <div className="admin-table-container">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Order ID & Date</th>
-                      <th>Customer & Address</th>
-                      <th>Order Items & Customizations</th>
-                      <th>Total Amount</th>
-                      <th>Payment</th>
-                      <th>Order Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orders.map((o) => (
-                      <tr key={o._id}>
-                        <td>
-                          <b>#{o._id?.substring(o._id.length - 8)}</b>
-                          <div
-                            style={{
-                              fontSize: "0.78rem",
-                              color: "var(--text-muted)",
-                              marginTop: "4px",
-                            }}
-                          >
-                            {new Date(o.date || o.createdAt).toLocaleString("en-IN")}
-                          </div>
-                        </td>
-                        <td>
-                          <b>
-                            {o.address?.firstName} {o.address?.lastName}
-                          </b>
-                          <div style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
-                            📞 {o.address?.phone}
-                          </div>
-                          <div
-                            style={{
-                              fontSize: "0.78rem",
-                              color: "var(--text-muted)",
-                              maxWidth: "200px",
-                              marginTop: "4px",
-                            }}
-                          >
-                            📍 {o.address?.street}, {o.address?.city}
-                          </div>
-                        </td>
-                        <td>
-                          {o.items?.map((it, idx) => (
-                            <div key={idx} style={{ marginBottom: "6px" }}>
-                              <b>{it.title}</b> (x{it.quantity}) — ₹
-                              {it.itemPrice || it.price}
-                              {it.customizationSummary && (
-                                <div
-                                  style={{
-                                    fontSize: "0.75rem",
-                                    color: "var(--brand-orange)",
-                                  }}
-                                >
-                                  {it.customizationSummary}
-                                </div>
-                              )}
+                {/* Desktop & Tablet Table View */}
+                <div className="admin-desktop-table-view">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Order ID & Date</th>
+                        <th>Customer & Address</th>
+                        <th>Order Items & Customizations</th>
+                        <th>Total Amount</th>
+                        <th>Payment</th>
+                        <th>Order Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {orders.map((o) => (
+                        <tr key={o._id}>
+                          <td>
+                            <b>#{o._id?.substring(o._id.length - 8)}</b>
+                            <div
+                              style={{
+                                fontSize: "0.78rem",
+                                color: "var(--text-muted)",
+                                marginTop: "4px",
+                              }}
+                            >
+                              {new Date(o.date || o.createdAt).toLocaleString("en-IN")}
                             </div>
-                          ))}
-                        </td>
-                        <td>
-                          <b style={{ fontSize: "1.1rem", color: "var(--brand-orange)" }}>
-                            ₹{o.amount}
-                          </b>
-                        </td>
-                        <td>
-                          <span
-                            style={{
-                              padding: "4px 10px",
-                              background: "rgba(255,255,255,0.06)",
-                              borderRadius: "999px",
-                              fontSize: "0.8rem",
-                              fontWeight: 600,
-                            }}
-                          >
-                            {o.paymentMethod || "COD"}
+                          </td>
+                          <td>
+                            <b>
+                              {o.address?.firstName} {o.address?.lastName}
+                            </b>
+                            <div style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                              📞 {o.address?.phone}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: "0.78rem",
+                                color: "var(--text-muted)",
+                                maxWidth: "200px",
+                                marginTop: "4px",
+                              }}
+                            >
+                              📍 {o.address?.street}, {o.address?.city}
+                            </div>
+                          </td>
+                          <td>
+                            {o.items?.map((it, idx) => (
+                              <div key={idx} style={{ marginBottom: "6px" }}>
+                                <b>{it.title}</b> (x{it.quantity}) — ₹
+                                {it.itemPrice || it.price}
+                                {it.customizationSummary && (
+                                  <div
+                                    style={{
+                                      fontSize: "0.75rem",
+                                      color: "var(--brand-orange)",
+                                    }}
+                                  >
+                                    {it.customizationSummary}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </td>
+                          <td>
+                            <b style={{ fontSize: "1.1rem", color: "var(--brand-orange)" }}>
+                              ₹{o.amount}
+                            </b>
+                          </td>
+                          <td>
+                            <span className="admin-payment-tag">
+                              {o.paymentMethod || "COD"}
+                            </span>
+                          </td>
+                          <td>
+                            <select
+                              className={`status-select ${
+                                o.status === "Delivered"
+                                  ? "delivered"
+                                  : o.status === "Out for Delivery"
+                                  ? "out-delivery"
+                                  : "processing"
+                              }`}
+                              value={o.status || "Food Processing"}
+                              onChange={(e) =>
+                                handleStatusUpdate(o._id, e.target.value)
+                              }
+                            >
+                              <option value="Food Processing">Food Processing</option>
+                              <option value="Out for Delivery">Out for Delivery</option>
+                              <option value="Delivered">Delivered</option>
+                              <option value="Cancelled">Cancelled</option>
+                            </select>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Responsive Order Cards View */}
+                <div className="admin-mobile-cards-view">
+                  {orders.map((o) => (
+                    <div key={o._id} className="admin-mobile-order-card">
+                      <div className="admin-card-header">
+                        <div>
+                          <span className="admin-card-id">#{o._id?.substring(o._id.length - 8)}</span>
+                          <span className="admin-card-date">
+                            {new Date(o.date || o.createdAt).toLocaleString("en-IN", {
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
                           </span>
-                        </td>
-                        <td>
+                        </div>
+                        <span
+                          className={`admin-status-pill ${
+                            o.status === "Delivered"
+                              ? "delivered"
+                              : o.status === "Out for Delivery"
+                              ? "out-delivery"
+                              : "processing"
+                          }`}
+                        >
+                          {o.status || "Food Processing"}
+                        </span>
+                      </div>
+
+                      <div className="admin-card-customer">
+                        <div className="admin-card-cust-name">
+                          👤 {o.address?.firstName} {o.address?.lastName}
+                        </div>
+                        {o.address?.phone && (
+                          <a href={`tel:${o.address.phone}`} className="admin-card-phone">
+                            📞 {o.address.phone}
+                          </a>
+                        )}
+                        {o.address?.street && (
+                          <div className="admin-card-address">
+                            📍 {o.address.street}, {o.address.city}, {o.address.state}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="admin-card-items">
+                        <div className="admin-card-items-title">
+                          Dishes ({o.items?.length || 0}):
+                        </div>
+                        {o.items?.map((it, idx) => (
+                          <div key={idx} className="admin-card-item-row">
+                            <span>• {it.title} <b style={{ color: "var(--brand-orange)" }}>(x{it.quantity})</b></span>
+                            <span>₹{(it.itemPrice || it.price) * it.quantity}</span>
+                            {it.customizationSummary && (
+                              <div className="admin-card-item-cust">👉 {it.customizationSummary}</div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="admin-card-footer">
+                        <div className="admin-card-financials">
+                          <span className="admin-card-total">₹{o.amount}</span>
+                          <span className="admin-payment-tag">{o.paymentMethod || "COD"}</span>
+                        </div>
+                        <div className="admin-card-status-control">
+                          <label>Status:</label>
                           <select
                             className={`status-select ${
                               o.status === "Delivered"
@@ -701,11 +1105,11 @@ const AdminPanel = () => {
                             <option value="Delivered">Delivered</option>
                             <option value="Cancelled">Cancelled</option>
                           </select>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -724,49 +1128,89 @@ const AdminPanel = () => {
             </div>
 
             <div className="admin-table-container">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Customer Name</th>
-                    <th>Email Address</th>
-                    <th>Registered On</th>
-                    <th>Orders Placed</th>
-                    <th>Total Spent (₹)</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((u) => (
-                    <tr key={u._id}>
-                      <td>
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          <div className="yf-user-avatar">
-                            {u.name ? u.name[0].toUpperCase() : "U"}
-                          </div>
-                          <b>{u.name}</b>
-                        </div>
-                      </td>
-                      <td>{u.email}</td>
-                      <td>
-                        <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
-                          {new Date(u.createdAt).toLocaleDateString("en-IN")}
-                        </span>
-                      </td>
-                      <td>
-                        <b style={{ color: "var(--brand-orange)" }}>
-                          {u.orderCount || 0} Orders
-                        </b>
-                      </td>
-                      <td>
-                        <b>₹{(u.totalSpent || 0).toLocaleString("en-IN")}</b>
-                      </td>
-                      <td>
-                        <span className="badge-veg">● Active Customer</span>
-                      </td>
+              {/* Desktop Table View */}
+              <div className="admin-desktop-table-view">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Customer Name</th>
+                      <th>Email Address</th>
+                      <th>Registered On</th>
+                      <th>Orders Placed</th>
+                      <th>Total Spent (₹)</th>
+                      <th>Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {users.map((u) => (
+                      <tr key={u._id}>
+                        <td>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <div className="yf-user-avatar">
+                              {u.name ? u.name[0].toUpperCase() : "U"}
+                            </div>
+                            <b>{u.name}</b>
+                          </div>
+                        </td>
+                        <td>{u.email}</td>
+                        <td>
+                          <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
+                            {new Date(u.createdAt).toLocaleDateString("en-IN")}
+                          </span>
+                        </td>
+                        <td>
+                          <b style={{ color: "var(--brand-orange)" }}>
+                            {u.orderCount || 0} Orders
+                          </b>
+                        </td>
+                        <td>
+                          <b>₹{(u.totalSpent || 0).toLocaleString("en-IN")}</b>
+                        </td>
+                        <td>
+                          <span className="badge-veg">● Active Customer</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile User Cards View */}
+              <div className="admin-mobile-cards-view">
+                {users.map((u) => (
+                  <div key={u._id} className="admin-mobile-user-card">
+                    <div className="admin-mobile-user-header">
+                      <div className="yf-user-avatar">
+                        {u.name ? u.name[0].toUpperCase() : "U"}
+                      </div>
+                      <div>
+                        <div className="admin-mobile-user-name">{u.name}</div>
+                        <div className="admin-mobile-user-email">{u.email}</div>
+                      </div>
+                      <span className="badge-veg" style={{ marginLeft: "auto" }}>Active</span>
+                    </div>
+
+                    <div className="admin-mobile-user-metrics">
+                      <div className="user-metric-item">
+                        <span className="user-metric-label">Orders Placed</span>
+                        <b className="user-metric-val">{u.orderCount || 0}</b>
+                      </div>
+                      <div className="user-metric-item">
+                        <span className="user-metric-label">Total Spent</span>
+                        <b className="user-metric-val" style={{ color: "var(--brand-orange)" }}>
+                          ₹{(u.totalSpent || 0).toLocaleString("en-IN")}
+                        </b>
+                      </div>
+                      <div className="user-metric-item">
+                        <span className="user-metric-label">Joined On</span>
+                        <span className="user-metric-val">
+                          {new Date(u.createdAt).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -838,11 +1282,12 @@ const AdminPanel = () => {
                       borderRadius: "8px",
                     }}
                   >
-                    <option value="Snacks">Snacks</option>
-                    <option value="Breakfast">Breakfast</option>
-                    <option value="Lunch">Lunch</option>
-                    <option value="Dinner">Dinner</option>
-                    <option value="Drinks">Drinks</option>
+                    <option value="Breakfast">🥞 Breakfast</option>
+                    <option value="Starters & Snacks">🍟 Starters & Snacks</option>
+                    <option value="Main Course">🍛 Main Course</option>
+                    <option value="Rice & Biryani">🍚 Rice & Biryani</option>
+                    <option value="Breads">🫓 Breads</option>
+                    <option value="Beverages & Desserts">🥤 Beverages & Desserts</option>
                   </select>
                 </div>
 
@@ -898,6 +1343,69 @@ const AdminPanel = () => {
                   />
                 </div>
 
+                {/* Customization builder for edit modal */}
+                <div className="admin-cust-builder" style={{ marginBottom: "16px" }}>
+                  <div className="admin-cust-builder-header">
+                    <div>
+                      <span className="cust-builder-title">🥗 Customizable Ingredients</span>
+                      <p className="cust-builder-subtitle">Adjust ingredients, default quantities, extra charges, or removable flags.</p>
+                    </div>
+                    <button type="button" className="admin-cust-add-btn" onClick={handleEditCustRow}>
+                      + Add Ingredient
+                    </button>
+                  </div>
+
+                  {editCustomizations.length === 0 && (
+                    <div className="admin-cust-empty">
+                      Standard Recipe (No customizations). Click "+ Add Ingredient" to add options.
+                    </div>
+                  )}
+
+                  <div className="admin-cust-rows">
+                    {editCustomizations.map((item, idx) => (
+                      <div key={idx} className="admin-cust-row">
+                        <input
+                          type="text"
+                          placeholder="Ingredient name (e.g. Extra Mayo)"
+                          value={item.name}
+                          onChange={(e) => handleEditCustChange(idx, "name", e.target.value)}
+                          className="cust-row-name"
+                          required
+                        />
+                        <div className="cust-row-fields">
+                          <label>Qty:
+                            <input
+                              type="number"
+                              value={item.defaultQty}
+                              min={0}
+                              onChange={(e) => handleEditCustChange(idx, "defaultQty", Number(e.target.value))}
+                              className="cust-row-num"
+                            />
+                          </label>
+                          <label>Extra ₹:
+                            <input
+                              type="number"
+                              value={item.extraPrice}
+                              min={0}
+                              onChange={(e) => handleEditCustChange(idx, "extraPrice", Number(e.target.value))}
+                              className="cust-row-num"
+                            />
+                          </label>
+                          <label className="cust-row-check">
+                            <input
+                              type="checkbox"
+                              checked={item.removable}
+                              onChange={(e) => handleEditCustChange(idx, "removable", e.target.checked)}
+                            />
+                            Removable
+                          </label>
+                          <button type="button" className="cust-row-remove" onClick={() => handleRemoveEditCust(idx)}>✕</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 <button type="submit" className="brand-btn" style={{ width: "100%", justifyContent: "center" }}>
                   Save & Update Dish
                 </button>
@@ -906,144 +1414,7 @@ const AdminPanel = () => {
           </div>
         )}
 
-        {/* ADD PRODUCT MODAL */}
-        {showAddModal && (
-          <div className="admin-modal-backdrop">
-            <div className="admin-modal">
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: "20px",
-                }}
-              >
-                <h2>✨ Add New Food Item</h2>
-                <button
-                  onClick={() => setShowAddModal(false)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "white",
-                    fontSize: "1.2rem",
-                    cursor: "pointer",
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
-
-              <form onSubmit={handleAddSubmit}>
-                <div className="form-group">
-                  <label>Dish Name / Title</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Paneer Tikka Roll"
-                    value={addForm.title}
-                    onChange={(e) =>
-                      setAddForm({ ...addForm, title: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Price (₹)</label>
-                  <input
-                    type="number"
-                    placeholder="180"
-                    value={addForm.price}
-                    onChange={(e) =>
-                      setAddForm({ ...addForm, price: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Category</label>
-                  <select
-                    value={addForm.category}
-                    onChange={(e) =>
-                      setAddForm({ ...addForm, category: e.target.value })
-                    }
-                    style={{
-                      width: "100%",
-                      padding: "10px",
-                      background: "rgba(255,255,255,0.05)",
-                      color: "white",
-                      border: "1px solid rgba(255,255,255,0.12)",
-                      borderRadius: "8px",
-                    }}
-                  >
-                    <option value="Snacks">Snacks</option>
-                    <option value="Breakfast">Breakfast</option>
-                    <option value="Lunch">Lunch</option>
-                    <option value="Dinner">Dinner</option>
-                    <option value="Drinks">Drinks</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Dietary Type</label>
-                  <select
-                    value={addForm.type}
-                    onChange={(e) =>
-                      setAddForm({ ...addForm, type: e.target.value })
-                    }
-                    style={{
-                      width: "100%",
-                      padding: "10px",
-                      background: "rgba(255,255,255,0.05)",
-                      color: "white",
-                      border: "1px solid rgba(255,255,255,0.12)",
-                      borderRadius: "8px",
-                    }}
-                  >
-                    <option value="veg">Pure Veg</option>
-                    <option value="non-veg">Non-Veg</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Unsplash Image URL</label>
-                  <input
-                    type="text"
-                    placeholder="https://images.unsplash.com/..."
-                    value={addForm.imageUrl}
-                    onChange={(e) =>
-                      setAddForm({ ...addForm, imageUrl: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Description</label>
-                  <textarea
-                    rows={3}
-                    placeholder="Freshly grilled cottage cheese wrapped in roomali roti..."
-                    value={addForm.description}
-                    onChange={(e) =>
-                      setAddForm({ ...addForm, description: e.target.value })
-                    }
-                    style={{
-                      width: "100%",
-                      padding: "10px",
-                      background: "rgba(255,255,255,0.05)",
-                      color: "white",
-                      border: "1px solid rgba(255,255,255,0.12)",
-                      borderRadius: "8px",
-                    }}
-                  />
-                </div>
-
-                <button type="submit" className="brand-btn" style={{ width: "100%", justifyContent: "center" }}>
-                  Add Dish to Menu
-                </button>
-              </form>
-            </div>
-          </div>
-        )}
+        {/* ADD PRODUCT — handled inline in Products tab above; removed modal */}
       </main>
     </div>
   );

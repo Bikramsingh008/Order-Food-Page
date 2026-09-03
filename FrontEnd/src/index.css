@@ -76,9 +76,10 @@ button, input, select, textarea {
 }
 
 /* Scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--bg-dark); }
-::-webkit-scrollbar-thumb { background: var(--brand-orange); border-radius: 99px; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 107, 0, 0.4); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--brand-orange); }
 
 /* Selection */
 ::selection { background: var(--brand-orange); color: #fff; }
