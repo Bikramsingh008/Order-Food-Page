@@ -15,7 +15,9 @@ const userAuth = async (req, res, next) => {
         const jwtSecret = (process.env.JWT_SECRET || "bikramsingh08").trim();
         const token_decode = jwt.verify(token, jwtSecret);
         if (token_decode && token_decode.id) {
+            if (!req.body) req.body = {};
             req.body.userId = token_decode.id;
+            req.userId = token_decode.id;
             next();
         } else {
             return res.status(401).json({ success: false, message: "Invalid session token, please log in again" });

@@ -33,12 +33,44 @@ const placeOrder = async (req, res) => {
     }
 };
 
-// User Order History
+// User Order History with automatic prototype stage progression
 const userOrders = async (req, res) => {
     try {
         const { userId } = req.body;
         const orders = await orderModel.find({ userId }).sort({ date: -1 });
-        res.json({ success: true, orders });
+
+        // Calculate and persist real elapsed stage for active orders
+        const updatedOrders = await Promise.all(
+            orders.map(async (o) => {
+                if (o.status === "Delivered" || o.status === "Cancelled") {
+                    return o;
+                }
+
+                const orderTime = new Date(o.date || o.createdAt).getTime();
+                const elapsedSec = Math.floor((Date.now() - orderTime) / 1000);
+
+                let targetStatus = o.status;
+                if (elapsedSec >= 50) {
+                    targetStatus = "Delivered";
+                } else if (elapsedSec >= 40) {
+                    targetStatus = "Arrived at Doorstep";
+                } else if (elapsedSec >= 30) {
+                    targetStatus = "Out for Delivery";
+                } else if (elapsedSec >= 20) {
+                    targetStatus = "Order Packed";
+                } else if (elapsedSec >= 10) {
+                    targetStatus = "Cooking Fresh";
+                }
+
+                if (targetStatus !== o.status) {
+                    o.status = targetStatus;
+                    await orderModel.findByIdAndUpdate(o._id, { status: targetStatus });
+                }
+                return o;
+            })
+        );
+
+        res.json({ success: true, orders: updatedOrders });
     } catch (error) {
         console.log("Error fetching user orders:", error);
         res.status(500).json({ success: false, message: error.message });

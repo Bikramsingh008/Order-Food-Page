@@ -9,6 +9,7 @@ const orderRouter = express.Router();
 orderRouter.post('/place', userAuth, placeOrder);
 orderRouter.post('/userorders', userAuth, userOrders);
 orderRouter.post('/rate', userAuth, rateOrder);
+orderRouter.post('/update-status', userAuth, updateStatus);
 
 // Admin routes
 orderRouter.get('/list', adminAuth, allOrders);

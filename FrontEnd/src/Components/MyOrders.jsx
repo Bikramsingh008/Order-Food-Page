@@ -54,7 +54,7 @@ const STAGES_CONFIG = [
     title: "📋 Order Received & Confirmed",
     subtitle: "Your order has been received by the kitchen! Getting ready...",
     img: null,
-    badge: "Stage 1/5 • Kitchen Confirmed",
+    badge: "Stage 1/6 • Kitchen Confirmed",
   },
   {
     key: "Cooking Fresh",
@@ -62,7 +62,7 @@ const STAGES_CONFIG = [
     title: "👨‍🍳 Cooking Fresh in Kitchen",
     subtitle: "Our master chef is preparing & cooking your food fresh with love!",
     img: cookingImg,
-    badge: "Stage 2/5 • Fresh Preparation",
+    badge: "Stage 2/6 • Fresh Preparation",
   },
   {
     key: "Order Packed",
@@ -70,7 +70,7 @@ const STAGES_CONFIG = [
     title: "📦 Order Packed & Sealed",
     subtitle: "Your hot meal has been packaged hygienically & ready for dispatch.",
     img: null,
-    badge: "Stage 3/5 • Sealed Hot",
+    badge: "Stage 3/6 • Sealed Hot",
   },
   {
     key: "Out for Delivery",
@@ -78,7 +78,7 @@ const STAGES_CONFIG = [
     title: "🛵 Delivery Partner On The Way",
     subtitle: "The delivery boy has picked up your order and is riding fast to your location!",
     img: scooterImg,
-    badge: "Stage 4/5 • Live Transit",
+    badge: "Stage 4/6 • Live Transit",
   },
   {
     key: "Arrived at Doorstep",
@@ -86,15 +86,15 @@ const STAGES_CONFIG = [
     title: "🚪 Delivery Boy Reached Your Address!",
     subtitle: "The delivery rider has arrived on time and is waiting for you at your doorstep!",
     img: doorstepImg,
-    badge: "Stage 5/5 • Arrived at Doorstep",
+    badge: "Stage 5/6 • Arrived at Doorstep",
   },
   {
     key: "Delivered",
     label: "Delivered",
-    title: "🎉 Delivered Successfully!",
-    subtitle: "Food delivered hot & fresh! Thank you for ordering with YummyFood!",
+    title: "🎉 Food Delivered Successfully!",
+    subtitle: "Your meal has been delivered hot & fresh! Thank you for ordering with YummyFood!",
     img: doorstepImg,
-    badge: "Completed • Enjoy Your Meal!",
+    badge: "Stage 6/6 • Order Completed",
   },
 ];
 
@@ -105,6 +105,22 @@ const getStageIndex = (status) => {
   if (status === "Order Packed" || status === "Packing") return 2;
   if (status === "Cooking Fresh" || status === "Cooking") return 1;
   return 0; // Order Placed / Food Processing
+};
+
+// Compute deterministic live stage from order creation timestamp
+const computeStageFromDate = (order) => {
+  if (order.status === "Delivered" || order.status === "Cancelled") {
+    return order.status;
+  }
+  const orderTime = new Date(order.date || order.createdAt).getTime();
+  const elapsedSec = Math.floor((Date.now() - orderTime) / 1000);
+
+  if (elapsedSec >= 50) return "Delivered";
+  if (elapsedSec >= 40) return "Arrived at Doorstep";
+  if (elapsedSec >= 30) return "Out for Delivery";
+  if (elapsedSec >= 20) return "Order Packed";
+  if (elapsedSec >= 10) return "Cooking Fresh";
+  return "Order Placed";
 };
 
 const MyOrders = () => {
@@ -155,116 +171,41 @@ const MyOrders = () => {
     fetchOrders();
   }, [token]);
 
-  // ─── TIME-BASED STAGE CALCULATOR (RUNS ONCE, PERSISTS ACROSS NAVIGATION) ────────
-  // Each active order has its start time stored in localStorage as `order_start_<id>`.
-  // Stage = Math.floor(elapsed seconds / 10). Stops at Delivered (index 5). Never restarts.
+  // ─── DETERMINISTIC LIVE STATUS TICKER (STOPS AT DELIVERED, NEVER RESTARTS) ───
   useEffect(() => {
-    if (orders.length === 0) return;
+    if (!token) return;
 
-    // On mount: immediately reconcile current status from elapsed time (so user sees correct stage when they navigate back)
-    const reconcileStages = () => {
-      setOrders((prevOrders) =>
-        prevOrders.map((o) => {
-          // Already done — don't change
-          if (o.status === "Delivered" || o.status === "Cancelled") {
-            // Clean up any stale timer key
-            localStorage.removeItem(`order_start_${o._id}`);
-            return o;
-          }
-
-          // Get or initialize the start timestamp
-          let startTime = parseInt(localStorage.getItem(`order_start_${o._id}`), 10);
-          const currentStageIdx = getStageIndex(o.status);
-
-          if (!startTime || isNaN(startTime)) {
-            // First time: anchor start time such that current stage is exactly where it is now
-            // e.g. if already at stage 2, set startTime = now - (2 * 10000) so it naturally progresses from here
-            startTime = Date.now() - currentStageIdx * 10000;
-            localStorage.setItem(`order_start_${o._id}`, startTime);
-          }
-
-          const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-          const targetStageIdx = Math.min(Math.floor(elapsedSeconds / 10), STAGES_CONFIG.length - 1);
-
-          if (targetStageIdx <= currentStageIdx) return o; // No change needed yet
-
-          const targetStatus = STAGES_CONFIG[targetStageIdx].key;
-
-          // Sync new status to backend silently
-          axios
-            .post(
-              `${API_URL}/order/status`,
-              { orderId: o._id, status: targetStatus },
-              { headers: { Authorization: `Bearer ${token}` } }
-            )
-            .catch(() => {});
-
-          // If we've reached Delivered, clean up the localStorage key
-          if (targetStageIdx === STAGES_CONFIG.length - 1) {
-            localStorage.removeItem(`order_start_${o._id}`);
-          }
-
-          return { ...o, status: targetStatus };
-        })
-      );
-    };
-
-    // Run immediately on mount (so user sees correct stage right away)
-    reconcileStages();
-
-    // Then re-check every 5 seconds to catch stage transitions
     const timer = setInterval(() => {
       setOrders((prevOrders) => {
-        // Check if ANY order is still active — if not, clear interval
-        const hasActive = prevOrders.some(
-          (o) => o.status !== "Delivered" && o.status !== "Cancelled"
-        );
-        if (!hasActive) return prevOrders;
-
-        let anyUpdated = false;
-
-        const newOrders = prevOrders.map((o) => {
+        let anyChanged = false;
+        const nextOrders = prevOrders.map((o) => {
+          // Once delivered or cancelled, NEVER change or restart
           if (o.status === "Delivered" || o.status === "Cancelled") return o;
 
-          const startTime = parseInt(localStorage.getItem(`order_start_${o._id}`), 10);
-          if (!startTime || isNaN(startTime)) return o;
+          const targetStatus = computeStageFromDate(o);
+          if (targetStatus !== o.status) {
+            anyChanged = true;
 
-          const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-          const targetStageIdx = Math.min(Math.floor(elapsedSeconds / 10), STAGES_CONFIG.length - 1);
-          const currentStageIdx = getStageIndex(o.status);
+            // Sync to MongoDB via authorized user endpoint
+            axios
+              .post(
+                `${API_URL}/order/update-status`,
+                { orderId: o._id, status: targetStatus },
+                { headers: { Authorization: `Bearer ${token}` } }
+              )
+              .catch((err) => console.log("Status sync err:", err));
 
-          if (targetStageIdx <= currentStageIdx) return o;
-
-          const targetStatus = STAGES_CONFIG[targetStageIdx].key;
-          anyUpdated = true;
-
-          // Sync to backend silently
-          axios
-            .post(
-              `${API_URL}/order/status`,
-              { orderId: o._id, status: targetStatus },
-              { headers: { Authorization: `Bearer ${token}` } }
-            )
-            .catch(() => {});
-
-          if (targetStageIdx === STAGES_CONFIG.length - 1) {
-            localStorage.removeItem(`order_start_${o._id}`);
+            return { ...o, status: targetStatus };
           }
-
-          return { ...o, status: targetStatus };
+          return o;
         });
 
-        if (anyUpdated) {
-          toast.info("⚡ Order Stage Updated", { autoClose: 2000, toastId: "stage-update" });
-        }
-
-        return newOrders;
+        return anyChanged ? nextOrders : prevOrders;
       });
-    }, 5000); // Check every 5s (smooth, no restart, deterministic)
+    }, 2000); // Check every 2s
 
     return () => clearInterval(timer);
-  }, [orders.length, token]); // Only re-register when order COUNT changes (new order added), not on every state update
-
+  }, [token]);
 
   const handleRatingSubmit = async (orderId) => {
     const starCount = ratings[orderId] || 0;
@@ -297,10 +238,16 @@ const MyOrders = () => {
     }
   };
 
-  // Split into Active (in-progress) and Past (delivered/cancelled)
-  const activeOrders = orders.filter(
-    (o) => o.status !== "Delivered" && o.status !== "Cancelled"
-  );
+  // Split into Active (in-progress or recently delivered so user sees Step 6 & feedback) and Past
+  const now = Date.now();
+  const activeOrders = orders.filter((o) => {
+    if (o.status === "Cancelled") return false;
+    if (o.status !== "Delivered") return true;
+    const orderTime = new Date(o.date || o.createdAt).getTime();
+    // Keep visible in live tracker view so user clearly sees Step 6 Delivered and can rate it!
+    return (now - orderTime) < 15 * 60 * 1000;
+  });
+
   const pastOrders = orders.filter(
     (o) => o.status === "Delivered" || o.status === "Cancelled"
   );
@@ -310,7 +257,7 @@ const MyOrders = () => {
       <div className="myorders-header">
         <h2>📦 Your Food Orders & Live Stage Tracking</h2>
         <p>
-          Active orders auto-advance through live stages every 10 seconds. Click any past order to expand full details & reviews!
+          Active orders auto-advance through 6 live stages every 10 seconds. Once delivered, it terminates permanently!
         </p>
       </div>
 
@@ -348,6 +295,7 @@ const MyOrders = () => {
                 const activeIndex = getStageIndex(order.status);
                 const stageInfo = STAGES_CONFIG[activeIndex] || STAGES_CONFIG[0];
                 const progressPercent = (activeIndex / (STAGES_CONFIG.length - 1)) * 100;
+                const isDelivered = order.status === "Delivered";
 
                 return (
                   <div key={order._id} className="order-card active-live-card">
@@ -361,8 +309,8 @@ const MyOrders = () => {
                         </span>
                       </div>
 
-                      <div className="order-status-badge status-transit">
-                        ⚡ {order.status}
+                      <div className={`order-status-badge ${isDelivered ? "status-delivered" : "status-transit"}`}>
+                        {isDelivered ? "✅ Delivered" : `⚡ ${order.status}`}
                       </div>
                     </div>
 
@@ -390,7 +338,7 @@ const MyOrders = () => {
                         </div>
                       </div>
 
-                      {/* Horizontal Step Progress Bar */}
+                      {/* Horizontal Step Progress Bar (All 6 Steps) */}
                       <div className="tracker-steps">
                         <div className="tracker-line-bg"></div>
                         <div
@@ -399,8 +347,8 @@ const MyOrders = () => {
                         ></div>
 
                         {STAGES_CONFIG.map((stage, idx) => {
-                          const isCompleted = idx < activeIndex;
-                          const isActive = idx === activeIndex;
+                          const isCompleted = idx < activeIndex || (isDelivered && idx === activeIndex);
+                          const isActive = idx === activeIndex && !isDelivered;
 
                           return (
                             <div
@@ -453,7 +401,7 @@ const MyOrders = () => {
                     <div className="order-bottom-summary">
                       <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
                         <FaMapMarkerAlt style={{ color: "var(--brand-orange)", marginRight: "4px" }} />
-                        Delivering to:{" "}
+                        {isDelivered ? "Delivered to: " : "Delivering to: "}
                         <strong style={{ color: "#FFF" }}>
                           {order.address?.street
                             ? `${order.address.street}, ${order.address.city}`
@@ -465,6 +413,73 @@ const MyOrders = () => {
                         <span style={{ fontSize: "0.75rem", color: "#888" }}>({order.paymentMethod})</span>
                       </div>
                     </div>
+
+                    {/* IF DELIVERED: SHOW RATING & FEEDBACK SECTION RIGHT ON THE CARD */}
+                    {isDelivered && (
+                      <div className="rating-section" style={{ marginTop: "20px" }}>
+                        <div className="rating-title">
+                          <FaHeart style={{ color: "#EF4444" }} /> Food Delivered! Rate Your Experience
+                        </div>
+
+                        {order.rating > 0 ? (
+                          <div className="rating-saved-box">
+                            <div>
+                              <div style={{ color: "#FFC107", fontSize: "1.2rem", fontWeight: 700 }}>
+                                {"★".repeat(order.rating)}{"☆".repeat(5 - order.rating)} ({order.rating}/5 Stars)
+                              </div>
+                              {order.review && (
+                                <div style={{ color: "#E0E0E0", fontSize: "0.9rem", marginTop: "4px" }}>
+                                  "{order.review}"
+                                </div>
+                              )}
+                            </div>
+                            <span style={{ color: "#4ADE80", fontWeight: 700, fontSize: "0.85rem" }}>
+                              ✓ Feedback Visible in Admin Panel
+                            </span>
+                          </div>
+                        ) : (
+                          <div>
+                            <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "10px" }}>
+                              Rate this order's food taste & delivery speed:
+                            </p>
+                            <div className="stars-picker">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <button
+                                  key={star}
+                                  type="button"
+                                  className={`star-btn ${
+                                    (ratings[order._id] || 0) >= star ? "active" : ""
+                                  }`}
+                                  onClick={() =>
+                                    setRatings((prev) => ({ ...prev, [order._id]: star }))
+                                  }
+                                >
+                                  ★
+                                </button>
+                              ))}
+                            </div>
+                            <textarea
+                              placeholder="Write a review message for the chef & delivery partner (optional)..."
+                              rows="2"
+                              className="rating-textarea"
+                              value={reviews[order._id] || ""}
+                              onChange={(e) =>
+                                setReviews((prev) => ({ ...prev, [order._id]: e.target.value }))
+                              }
+                            ></textarea>
+                            <button
+                              type="button"
+                              className="brand-btn"
+                              style={{ padding: "10px 24px", fontSize: "0.88rem" }}
+                              disabled={submittingRating[order._id]}
+                              onClick={() => handleRatingSubmit(order._id)}
+                            >
+                              {submittingRating[order._id] ? "Submitting..." : "Submit Rating & Review"}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
