@@ -229,8 +229,15 @@ const Cart = ({ cartItems, updateQuantity, removeFromCart, clearCart, handleCart
 
       if (res.data.success) {
         toast.success("🎉 Order placed successfully!");
+        const orderId = res.data.orderId || res.data.order?._id || res.data.order?.id;
+
+        // ── Save order placement timestamp so stage calculator can anchor from NOW ──
+        if (orderId) {
+          localStorage.setItem(`order_start_${orderId}`, Date.now());
+        }
+
         setPlacedOrderDetails({
-          orderId: res.data.orderId || res.data.order?._id || "YM-" + Math.floor(100000 + Math.random() * 900000),
+          orderId: orderId || "YM-" + Math.floor(100000 + Math.random() * 900000),
           total: Math.round(grandTotal),
           address: formData,
           items: orderItems,

@@ -155,43 +155,116 @@ const MyOrders = () => {
     fetchOrders();
   }, [token]);
 
-  // ─── 10-SECOND AUTO-SIMULATION PROTOTYPE TIMER (STOPS AT DELIVERED) ───────────
+  // ─── TIME-BASED STAGE CALCULATOR (RUNS ONCE, PERSISTS ACROSS NAVIGATION) ────────
+  // Each active order has its start time stored in localStorage as `order_start_<id>`.
+  // Stage = Math.floor(elapsed seconds / 10). Stops at Delivered (index 5). Never restarts.
   useEffect(() => {
+    if (orders.length === 0) return;
+
+    // On mount: immediately reconcile current status from elapsed time (so user sees correct stage when they navigate back)
+    const reconcileStages = () => {
+      setOrders((prevOrders) =>
+        prevOrders.map((o) => {
+          // Already done — don't change
+          if (o.status === "Delivered" || o.status === "Cancelled") {
+            // Clean up any stale timer key
+            localStorage.removeItem(`order_start_${o._id}`);
+            return o;
+          }
+
+          // Get or initialize the start timestamp
+          let startTime = parseInt(localStorage.getItem(`order_start_${o._id}`), 10);
+          const currentStageIdx = getStageIndex(o.status);
+
+          if (!startTime || isNaN(startTime)) {
+            // First time: anchor start time such that current stage is exactly where it is now
+            // e.g. if already at stage 2, set startTime = now - (2 * 10000) so it naturally progresses from here
+            startTime = Date.now() - currentStageIdx * 10000;
+            localStorage.setItem(`order_start_${o._id}`, startTime);
+          }
+
+          const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+          const targetStageIdx = Math.min(Math.floor(elapsedSeconds / 10), STAGES_CONFIG.length - 1);
+
+          if (targetStageIdx <= currentStageIdx) return o; // No change needed yet
+
+          const targetStatus = STAGES_CONFIG[targetStageIdx].key;
+
+          // Sync new status to backend silently
+          axios
+            .post(
+              `${API_URL}/order/status`,
+              { orderId: o._id, status: targetStatus },
+              { headers: { Authorization: `Bearer ${token}` } }
+            )
+            .catch(() => {});
+
+          // If we've reached Delivered, clean up the localStorage key
+          if (targetStageIdx === STAGES_CONFIG.length - 1) {
+            localStorage.removeItem(`order_start_${o._id}`);
+          }
+
+          return { ...o, status: targetStatus };
+        })
+      );
+    };
+
+    // Run immediately on mount (so user sees correct stage right away)
+    reconcileStages();
+
+    // Then re-check every 5 seconds to catch stage transitions
     const timer = setInterval(() => {
       setOrders((prevOrders) => {
-        let updated = false;
+        // Check if ANY order is still active — if not, clear interval
+        const hasActive = prevOrders.some(
+          (o) => o.status !== "Delivered" && o.status !== "Cancelled"
+        );
+        if (!hasActive) return prevOrders;
+
+        let anyUpdated = false;
+
         const newOrders = prevOrders.map((o) => {
-          // STOP immediately once Delivered or Cancelled
           if (o.status === "Delivered" || o.status === "Cancelled") return o;
 
-          const currentIdx = getStageIndex(o.status);
-          if (currentIdx < STAGES_CONFIG.length - 1) {
-            const nextStatus = STAGES_CONFIG[currentIdx + 1].key;
-            updated = true;
+          const startTime = parseInt(localStorage.getItem(`order_start_${o._id}`), 10);
+          if (!startTime || isNaN(startTime)) return o;
 
-            // Sync with backend in background
-            axios
-              .post(
-                `${API_URL}/order/status`,
-                { orderId: o._id, status: nextStatus },
-                { headers: { Authorization: `Bearer ${token}` } }
-              )
-              .catch(() => {});
+          const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+          const targetStageIdx = Math.min(Math.floor(elapsedSeconds / 10), STAGES_CONFIG.length - 1);
+          const currentStageIdx = getStageIndex(o.status);
 
-            return { ...o, status: nextStatus };
+          if (targetStageIdx <= currentStageIdx) return o;
+
+          const targetStatus = STAGES_CONFIG[targetStageIdx].key;
+          anyUpdated = true;
+
+          // Sync to backend silently
+          axios
+            .post(
+              `${API_URL}/order/status`,
+              { orderId: o._id, status: targetStatus },
+              { headers: { Authorization: `Bearer ${token}` } }
+            )
+            .catch(() => {});
+
+          if (targetStageIdx === STAGES_CONFIG.length - 1) {
+            localStorage.removeItem(`order_start_${o._id}`);
           }
-          return o;
+
+          return { ...o, status: targetStatus };
         });
 
-        if (updated) {
-          toast.info("⚡ Live Order Stage Updated (Auto-Timer)", { autoClose: 2000 });
+        if (anyUpdated) {
+          toast.info("⚡ Order Stage Updated", { autoClose: 2000, toastId: "stage-update" });
         }
+
         return newOrders;
       });
-    }, 10000); // 10 seconds
+    }, 5000); // Check every 5s (smooth, no restart, deterministic)
 
     return () => clearInterval(timer);
-  }, [token]);
+  }, [orders.length, token]); // Only re-register when order COUNT changes (new order added), not on every state update
+
 
   const handleRatingSubmit = async (orderId) => {
     const starCount = ratings[orderId] || 0;
