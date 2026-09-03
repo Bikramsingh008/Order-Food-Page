@@ -14,6 +14,7 @@ import AdminPanel from "./Components/AdminPanel";
 import AdminRoute from "./Components/AdminRoute";
 import UserProfile from "./Components/UserProfile";
 import MyOrders from "./Components/MyOrders";
+import ScrollToTop from "./Components/ScrollToTop";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -72,6 +73,7 @@ function App() {
   return (
     <>
       <BrowserRouter>
+        <ScrollToTop />
         <ToastContainer position="top-right" autoClose={3000} theme="colored" />
         <Header count={cartItems.reduce((acc, item) => acc + item.quantity, 0)} />
         <Routes>

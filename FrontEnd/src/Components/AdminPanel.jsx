@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { API_URL } from "../utils/api";
@@ -19,6 +19,8 @@ import {
 import "./AdminPanel.css";
 
 const AdminPanel = () => {
+  const productFormTopRef = useRef(null);
+  const productsListRef = useRef(null);
   const [activeTab, setActiveTab] = useState("dashboard"); // dashboard, products, orders, users
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -150,8 +152,23 @@ const AdminPanel = () => {
     }
   };
 
-  // Open Edit Modal
+  // Toggle Add Form with smooth scroll
+  const toggleAddForm = () => {
+    setEditingProduct(null);
+    setShowAddModal((prev) => {
+      const next = !prev;
+      if (next) {
+        setTimeout(() => {
+          productFormTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 60);
+      }
+      return next;
+    });
+  };
+
+  // Open Edit Form at Top with smooth scroll
   const openEditModal = (prod) => {
+    setShowAddModal(false);
     setEditingProduct(prod);
     setEditForm({
       title: prod.title || "",
@@ -163,6 +180,10 @@ const AdminPanel = () => {
       imageUrl: prod.img?.[0] || "",
     });
     setEditCustomizations(prod.customizations ? [...prod.customizations] : []);
+
+    setTimeout(() => {
+      productFormTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
   };
 
   // Submit Product Edit
@@ -195,6 +216,9 @@ const AdminPanel = () => {
           )
         );
         setEditingProduct(null);
+        setTimeout(() => {
+          productsListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 100);
       } else {
         toast.error(res.data.message || "Failed to update item");
       }
@@ -238,6 +262,9 @@ const AdminPanel = () => {
           imageUrl: "",
         });
         setAddCustomizations([]);
+        setTimeout(() => {
+          productsListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 100);
       } else {
         toast.error(res.data.message || "Failed to add item");
       }
@@ -571,7 +598,7 @@ const AdminPanel = () => {
         {/* PRODUCTS MANAGEMENT TAB */}
         {activeTab === "products" && (
           <div>
-            <div className="admin-page-header">
+            <div className="admin-page-header" ref={productFormTopRef}>
               <div>
                 <h1 className="admin-page-title">🍔 Manage Catalog Products</h1>
                 <p style={{ color: "var(--text-muted)", marginTop: "4px" }}>
@@ -581,11 +608,226 @@ const AdminPanel = () => {
 
               <button
                 className="brand-btn"
-                onClick={() => setShowAddModal(!showAddModal)}
+                onClick={toggleAddForm}
               >
                 <FaPlus /> {showAddModal ? "Cancel" : "Add New Dish"}
               </button>
             </div>
+
+            {/* ─── INLINE EDIT DISH FORM (OPENS AT TOP) ─────────────────────── */}
+            {editingProduct && (
+              <div className="admin-add-form-inline" style={{ borderColor: "rgba(59, 130, 246, 0.4)", background: "rgba(59, 130, 246, 0.04)" }}>
+                <div className="admin-add-form-header" style={{ background: "linear-gradient(135deg, rgba(59,130,246,0.2), rgba(59,130,246,0.08))", color: "#60A5FA", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span>✏️ Editing Food Item: "{editingProduct.title}"</span>
+                  <button
+                    type="button"
+                    onClick={() => setEditingProduct(null)}
+                    style={{
+                      background: "rgba(255,255,255,0.08)",
+                      border: "1px solid rgba(255,255,255,0.15)",
+                      color: "#FFF",
+                      padding: "4px 12px",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      fontSize: "0.82rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    ✕ Cancel Edit
+                  </button>
+                </div>
+                <form onSubmit={handleEditSubmit} className="admin-add-form-body">
+                  <div className="admin-add-form-grid">
+                    {/* Title */}
+                    <div className="form-group">
+                      <label>Dish Name / Title</label>
+                      <input
+                        type="text"
+                        value={editForm.title}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, title: e.target.value })
+                        }
+                        required
+                      />
+                    </div>
+
+                    {/* Price */}
+                    <div className="form-group">
+                      <label>Price (₹)</label>
+                      <input
+                        type="number"
+                        value={editForm.price}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, price: e.target.value })
+                        }
+                        required
+                      />
+                    </div>
+
+                    {/* Category - 100% visible dark background with bright white text */}
+                    <div className="form-group">
+                      <label>Category</label>
+                      <select
+                        value={editForm.category}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, category: e.target.value })
+                        }
+                        style={{
+                          width: "100%",
+                          padding: "10px 14px",
+                          background: "#1f2937",
+                          color: "#ffffff",
+                          border: "1.5px solid rgba(255,255,255,0.2)",
+                          borderRadius: "8px",
+                          fontSize: "0.92rem",
+                          fontWeight: "600",
+                        }}
+                      >
+                        <option value="Breakfast" style={{ backgroundColor: "#1f2937", color: "#ffffff", padding: "8px" }}>🥞 Breakfast</option>
+                        <option value="Starters & Snacks" style={{ backgroundColor: "#1f2937", color: "#ffffff", padding: "8px" }}>🍟 Starters & Snacks</option>
+                        <option value="Main Course" style={{ backgroundColor: "#1f2937", color: "#ffffff", padding: "8px" }}>🍛 Main Course</option>
+                        <option value="Rice & Biryani" style={{ backgroundColor: "#1f2937", color: "#ffffff", padding: "8px" }}>🍚 Rice & Biryani</option>
+                        <option value="Breads" style={{ backgroundColor: "#1f2937", color: "#ffffff", padding: "8px" }}>🫓 Breads</option>
+                        <option value="Beverages & Desserts" style={{ backgroundColor: "#1f2937", color: "#ffffff", padding: "8px" }}>🥤 Beverages & Desserts</option>
+                      </select>
+                    </div>
+
+                    {/* Dietary Type */}
+                    <div className="form-group">
+                      <label>Dietary Type</label>
+                      <select
+                        value={editForm.type}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, type: e.target.value })
+                        }
+                        style={{
+                          width: "100%",
+                          padding: "10px 14px",
+                          background: "#1f2937",
+                          color: "#ffffff",
+                          border: "1.5px solid rgba(255,255,255,0.2)",
+                          borderRadius: "8px",
+                          fontSize: "0.92rem",
+                          fontWeight: "600",
+                        }}
+                      >
+                        <option value="veg" style={{ backgroundColor: "#1f2937", color: "#ffffff" }}>🟢 Pure Veg</option>
+                        <option value="non-veg" style={{ backgroundColor: "#1f2937", color: "#ffffff" }}>🔴 Non-Veg</option>
+                      </select>
+                    </div>
+
+                    {/* Image URL */}
+                    <div className="form-group full-width">
+                      <label>Image URL (Unsplash or direct image link)</label>
+                      <input
+                        type="text"
+                        value={editForm.imageUrl}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, imageUrl: e.target.value })
+                        }
+                        required
+                      />
+                    </div>
+
+                    {/* Description */}
+                    <div className="form-group full-width">
+                      <label>Description</label>
+                      <textarea
+                        rows={3}
+                        value={editForm.description}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, description: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  {/* Customizations Builder */}
+                  <div className="admin-cust-builder">
+                    <div className="admin-cust-builder-header">
+                      <div>
+                        <span className="cust-builder-title">🥗 Customizable Ingredients & Add-ons</span>
+                        <p className="cust-builder-subtitle">Adjust ingredients, default quantities, extra charges, or removable flags.</p>
+                      </div>
+                      <button type="button" className="admin-cust-add-btn" onClick={handleEditCustRow}>
+                        + Add Ingredient
+                      </button>
+                    </div>
+
+                    {editCustomizations.length === 0 && (
+                      <div className="admin-cust-empty">
+                        Standard Recipe (No customizations). Click "+ Add Ingredient" to add options.
+                      </div>
+                    )}
+
+                    <div className="admin-cust-rows">
+                      {editCustomizations.map((item, idx) => (
+                        <div key={idx} className="admin-cust-row">
+                          <input
+                            type="text"
+                            placeholder="Ingredient name (e.g. Extra Mayo)"
+                            value={item.name}
+                            onChange={(e) => handleEditCustChange(idx, "name", e.target.value)}
+                            className="cust-row-name"
+                            required
+                          />
+                          <div className="cust-row-fields">
+                            <label>Qty:
+                              <input
+                                type="number"
+                                value={item.defaultQty}
+                                min={0}
+                                onChange={(e) => handleEditCustChange(idx, "defaultQty", Number(e.target.value))}
+                                className="cust-row-num"
+                              />
+                            </label>
+                            <label>Extra ₹:
+                              <input
+                                type="number"
+                                value={item.extraPrice}
+                                min={0}
+                                onChange={(e) => handleEditCustChange(idx, "extraPrice", Number(e.target.value))}
+                                className="cust-row-num"
+                              />
+                            </label>
+                            <label className="cust-row-check">
+                              <input
+                                type="checkbox"
+                                checked={item.removable}
+                                onChange={(e) => handleEditCustChange(idx, "removable", e.target.checked)}
+                              />
+                              Removable
+                            </label>
+                            <button type="button" className="cust-row-remove" onClick={() => handleRemoveEditCust(idx)}>✕</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: "12px", marginTop: "10px" }}>
+                    <button type="submit" className="brand-btn" style={{ flex: 1, justifyContent: "center" }}>
+                      💾 Save & Update Dish
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingProduct(null)}
+                      style={{
+                        padding: "12px 24px",
+                        background: "rgba(255, 255, 255, 0.08)",
+                        border: "1px solid rgba(255, 255, 255, 0.15)",
+                        color: "#FFF",
+                        borderRadius: "var(--radius-sm)",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
 
             {/* ─── INLINE ADD DISH FORM ─────────────────────────────────────── */}
             {showAddModal && (
@@ -619,19 +861,29 @@ const AdminPanel = () => {
                       />
                     </div>
 
-                    {/* Category */}
+                    {/* Category - 100% visible dark background with bright white text */}
                     <div className="form-group">
                       <label>Category</label>
                       <select
                         value={addForm.category}
                         onChange={(e) => setAddForm({ ...addForm, category: e.target.value })}
+                        style={{
+                          width: "100%",
+                          padding: "10px 14px",
+                          background: "#1f2937",
+                          color: "#ffffff",
+                          border: "1.5px solid rgba(255,255,255,0.2)",
+                          borderRadius: "8px",
+                          fontSize: "0.92rem",
+                          fontWeight: "600",
+                        }}
                       >
-                        <option value="Breakfast">🥞 Breakfast</option>
-                        <option value="Starters & Snacks">🍟 Starters & Snacks</option>
-                        <option value="Main Course">🍛 Main Course</option>
-                        <option value="Rice & Biryani">🍚 Rice & Biryani</option>
-                        <option value="Breads">🫓 Breads</option>
-                        <option value="Beverages & Desserts">🥤 Beverages & Desserts</option>
+                        <option value="Breakfast" style={{ backgroundColor: "#1f2937", color: "#ffffff", padding: "8px" }}>🥞 Breakfast</option>
+                        <option value="Starters & Snacks" style={{ backgroundColor: "#1f2937", color: "#ffffff", padding: "8px" }}>🍟 Starters & Snacks</option>
+                        <option value="Main Course" style={{ backgroundColor: "#1f2937", color: "#ffffff", padding: "8px" }}>🍛 Main Course</option>
+                        <option value="Rice & Biryani" style={{ backgroundColor: "#1f2937", color: "#ffffff", padding: "8px" }}>🍚 Rice & Biryani</option>
+                        <option value="Breads" style={{ backgroundColor: "#1f2937", color: "#ffffff", padding: "8px" }}>🫓 Breads</option>
+                        <option value="Beverages & Desserts" style={{ backgroundColor: "#1f2937", color: "#ffffff", padding: "8px" }}>🥤 Beverages & Desserts</option>
                       </select>
                     </div>
 
@@ -1256,209 +1508,11 @@ const AdminPanel = () => {
           </div>
         )}
 
-        {/* EDIT PRODUCT MODAL */}
-        {editingProduct && (
-          <div className="admin-modal-backdrop">
-            <div className="admin-modal">
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: "20px",
-                }}
-              >
-                <h2>✏️ Edit Food Item</h2>
-                <button
-                  onClick={() => setEditingProduct(null)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "white",
-                    fontSize: "1.2rem",
-                    cursor: "pointer",
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
-
-              <form onSubmit={handleEditSubmit}>
-                <div className="form-group">
-                  <label>Dish Name / Title</label>
-                  <input
-                    type="text"
-                    value={editForm.title}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, title: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Price (₹)</label>
-                  <input
-                    type="number"
-                    value={editForm.price}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, price: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Category</label>
-                  <select
-                    value={editForm.category}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, category: e.target.value })
-                    }
-                    style={{
-                      width: "100%",
-                      padding: "10px",
-                      background: "rgba(255,255,255,0.05)",
-                      color: "white",
-                      border: "1px solid rgba(255,255,255,0.12)",
-                      borderRadius: "8px",
-                    }}
-                  >
-                    <option value="Breakfast">🥞 Breakfast</option>
-                    <option value="Starters & Snacks">🍟 Starters & Snacks</option>
-                    <option value="Main Course">🍛 Main Course</option>
-                    <option value="Rice & Biryani">🍚 Rice & Biryani</option>
-                    <option value="Breads">🫓 Breads</option>
-                    <option value="Beverages & Desserts">🥤 Beverages & Desserts</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Dietary Type</label>
-                  <select
-                    value={editForm.type}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, type: e.target.value })
-                    }
-                    style={{
-                      width: "100%",
-                      padding: "10px",
-                      background: "rgba(255,255,255,0.05)",
-                      color: "white",
-                      border: "1px solid rgba(255,255,255,0.12)",
-                      borderRadius: "8px",
-                    }}
-                  >
-                    <option value="veg">Pure Veg</option>
-                    <option value="non-veg">Non-Veg</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Unsplash Image URL</label>
-                  <input
-                    type="text"
-                    value={editForm.imageUrl}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, imageUrl: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Description</label>
-                  <textarea
-                    rows={3}
-                    value={editForm.description}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, description: e.target.value })
-                    }
-                    style={{
-                      width: "100%",
-                      padding: "10px",
-                      background: "rgba(255,255,255,0.05)",
-                      color: "white",
-                      border: "1px solid rgba(255,255,255,0.12)",
-                      borderRadius: "8px",
-                    }}
-                  />
-                </div>
-
-                {/* Customization builder for edit modal */}
-                <div className="admin-cust-builder" style={{ marginBottom: "16px" }}>
-                  <div className="admin-cust-builder-header">
-                    <div>
-                      <span className="cust-builder-title">🥗 Customizable Ingredients</span>
-                      <p className="cust-builder-subtitle">Adjust ingredients, default quantities, extra charges, or removable flags.</p>
-                    </div>
-                    <button type="button" className="admin-cust-add-btn" onClick={handleEditCustRow}>
-                      + Add Ingredient
-                    </button>
-                  </div>
-
-                  {editCustomizations.length === 0 && (
-                    <div className="admin-cust-empty">
-                      Standard Recipe (No customizations). Click "+ Add Ingredient" to add options.
-                    </div>
-                  )}
-
-                  <div className="admin-cust-rows">
-                    {editCustomizations.map((item, idx) => (
-                      <div key={idx} className="admin-cust-row">
-                        <input
-                          type="text"
-                          placeholder="Ingredient name (e.g. Extra Mayo)"
-                          value={item.name}
-                          onChange={(e) => handleEditCustChange(idx, "name", e.target.value)}
-                          className="cust-row-name"
-                          required
-                        />
-                        <div className="cust-row-fields">
-                          <label>Qty:
-                            <input
-                              type="number"
-                              value={item.defaultQty}
-                              min={0}
-                              onChange={(e) => handleEditCustChange(idx, "defaultQty", Number(e.target.value))}
-                              className="cust-row-num"
-                            />
-                          </label>
-                          <label>Extra ₹:
-                            <input
-                              type="number"
-                              value={item.extraPrice}
-                              min={0}
-                              onChange={(e) => handleEditCustChange(idx, "extraPrice", Number(e.target.value))}
-                              className="cust-row-num"
-                            />
-                          </label>
-                          <label className="cust-row-check">
-                            <input
-                              type="checkbox"
-                              checked={item.removable}
-                              onChange={(e) => handleEditCustChange(idx, "removable", e.target.checked)}
-                            />
-                            Removable
-                          </label>
-                          <button type="button" className="cust-row-remove" onClick={() => handleRemoveEditCust(idx)}>✕</button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <button type="submit" className="brand-btn" style={{ width: "100%", justifyContent: "center" }}>
-                  Save & Update Dish
-                </button>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* ADD PRODUCT — handled inline in Products tab above; removed modal */}
       </main>
     </div>
   );
 };
 
 export default AdminPanel;
+
+
