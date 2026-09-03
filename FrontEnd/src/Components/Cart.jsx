@@ -202,7 +202,7 @@ const Cart = ({ cartItems, updateQuantity, removeFromCart, clearCart, handleCart
           basePrice: item.basePrice || item.price,
           itemPrice: item.itemPrice || item.price,
           quantity: item.quantity,
-          img: item.img,
+          img: Array.isArray(item.img) ? item.img : item.img ? [item.img] : ["https://images.unsplash.com/photo-1546069901-ba9599a7e63c"],
           customizations: item.customizations || [],
           customizationSummary: customizationText
             ? `${item.title} x${item.quantity} — ${customizationText}`

@@ -22,6 +22,31 @@ import cookingImg from "../assets/delivery/cooking.jpg";
 import scooterImg from "../assets/delivery/scooter.jpg";
 import doorstepImg from "../assets/delivery/doorstep.jpg";
 
+const FALLBACK_FOOD_IMG =
+  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80";
+
+const getItemImage = (item) => {
+  if (!item) return FALLBACK_FOOD_IMG;
+  // If array of images
+  if (Array.isArray(item.img) && item.img.length > 0 && typeof item.img[0] === "string" && item.img[0].length > 5) {
+    return item.img[0];
+  }
+  // If single string URL
+  if (typeof item.img === "string" && item.img.length > 5) {
+    return item.img;
+  }
+  if (Array.isArray(item.image) && item.image.length > 0 && typeof item.image[0] === "string" && item.image[0].length > 5) {
+    return item.image[0];
+  }
+  if (typeof item.image === "string" && item.image.length > 5) {
+    return item.image;
+  }
+  if (typeof item.imageUrl === "string" && item.imageUrl.length > 5) {
+    return item.imageUrl;
+  }
+  return FALLBACK_FOOD_IMG;
+};
+
 const STAGES_CONFIG = [
   {
     key: "Order Placed",
@@ -326,13 +351,13 @@ const MyOrders = () => {
                       {order.items.map((item, i) => (
                         <div key={i} className="order-item-row">
                           <img
-                            src={
-                              item.img && item.img[0]
-                                ? item.img[0]
-                                : "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=200&q=80"
-                            }
-                            alt={item.title}
+                            src={getItemImage(item)}
+                            alt={item.title || "Dish"}
                             className="order-item-img"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = FALLBACK_FOOD_IMG;
+                            }}
                           />
                           <div className="order-item-info">
                             <div className="order-item-name">
@@ -452,13 +477,13 @@ const MyOrders = () => {
                           {order.items.map((item, i) => (
                             <div key={i} className="order-item-row">
                               <img
-                                src={
-                                  item.img && item.img[0]
-                                    ? item.img[0]
-                                    : "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=200&q=80"
-                                }
-                                alt={item.title}
+                                src={getItemImage(item)}
+                                alt={item.title || "Dish"}
                                 className="order-item-img"
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.src = FALLBACK_FOOD_IMG;
+                                }}
                               />
                               <div className="order-item-info">
                                 <div className="order-item-name">
