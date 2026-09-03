@@ -449,19 +449,22 @@ const AdminPanel = () => {
                               className={`status-select ${
                                 o.status === "Delivered"
                                   ? "delivered"
-                                  : o.status === "Out for Delivery"
+                                  : o.status === "Out for Delivery" || o.status === "Arrived at Doorstep"
                                   ? "out-delivery"
                                   : "processing"
                               }`}
-                              value={o.status || "Food Processing"}
+                              value={o.status || "Order Placed"}
                               onChange={(e) =>
                                 handleStatusUpdate(o._id, e.target.value)
                               }
                             >
-                              <option value="Food Processing">Food Processing</option>
-                              <option value="Out for Delivery">Out for Delivery</option>
-                              <option value="Delivered">Delivered</option>
-                              <option value="Cancelled">Cancelled</option>
+                              <option value="Order Placed">📋 Order Received</option>
+                              <option value="Cooking Fresh">👨‍🍳 Cooking Fresh</option>
+                              <option value="Order Packed">📦 Order Packed</option>
+                              <option value="Out for Delivery">🛵 Out for Delivery</option>
+                              <option value="Arrived at Doorstep">🚪 Arrived at Doorstep</option>
+                              <option value="Delivered">✅ Delivered</option>
+                              <option value="Cancelled">❌ Cancelled</option>
                             </select>
                           </td>
                         </tr>
@@ -538,19 +541,22 @@ const AdminPanel = () => {
                             className={`status-select ${
                               o.status === "Delivered"
                                 ? "delivered"
-                                : o.status === "Out for Delivery"
+                                : o.status === "Out for Delivery" || o.status === "Arrived at Doorstep"
                                 ? "out-delivery"
                                 : "processing"
                             }`}
-                            value={o.status || "Food Processing"}
+                            value={o.status || "Order Placed"}
                             onChange={(e) =>
                               handleStatusUpdate(o._id, e.target.value)
                             }
                           >
-                            <option value="Food Processing">Food Processing</option>
-                            <option value="Out for Delivery">Out for Delivery</option>
-                            <option value="Delivered">Delivered</option>
-                            <option value="Cancelled">Cancelled</option>
+                            <option value="Order Placed">📋 Order Received</option>
+                            <option value="Cooking Fresh">👨‍🍳 Cooking Fresh</option>
+                            <option value="Order Packed">📦 Order Packed</option>
+                            <option value="Out for Delivery">🛵 Out for Delivery</option>
+                            <option value="Arrived at Doorstep">🚪 Arrived at Doorstep</option>
+                            <option value="Delivered">✅ Delivered</option>
+                            <option value="Cancelled">❌ Cancelled</option>
                           </select>
                         </div>
                       </div>
@@ -929,7 +935,7 @@ const AdminPanel = () => {
                         <th>Customer & Address</th>
                         <th>Order Items & Customizations</th>
                         <th>Total Amount</th>
-                        <th>Payment</th>
+                        <th>Customer Rating</th>
                         <th>Order Status</th>
                       </tr>
                     </thead>
@@ -988,30 +994,49 @@ const AdminPanel = () => {
                             <b style={{ fontSize: "1.1rem", color: "var(--brand-orange)" }}>
                               ₹{o.amount}
                             </b>
+                            <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                              {o.paymentMethod || "COD"}
+                            </div>
                           </td>
                           <td>
-                            <span className="admin-payment-tag">
-                              {o.paymentMethod || "COD"}
-                            </span>
+                            {o.rating > 0 ? (
+                              <div>
+                                <div style={{ color: "#FFC107", fontWeight: 700, fontSize: "0.95rem" }}>
+                                  {"★".repeat(o.rating)}{"☆".repeat(5 - o.rating)} ({o.rating}/5)
+                                </div>
+                                {o.review && (
+                                  <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", fontStyle: "italic", maxWidth: "160px", marginTop: "2px" }}>
+                                    "{o.review}"
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                                {o.status === "Delivered" ? "Pending Rating" : "In Progress"}
+                              </span>
+                            )}
                           </td>
                           <td>
                             <select
                               className={`status-select ${
                                 o.status === "Delivered"
                                   ? "delivered"
-                                  : o.status === "Out for Delivery"
+                                  : o.status === "Out for Delivery" || o.status === "Arrived at Doorstep"
                                   ? "out-delivery"
                                   : "processing"
                               }`}
-                              value={o.status || "Food Processing"}
+                              value={o.status || "Order Placed"}
                               onChange={(e) =>
                                 handleStatusUpdate(o._id, e.target.value)
                               }
                             >
-                              <option value="Food Processing">Food Processing</option>
-                              <option value="Out for Delivery">Out for Delivery</option>
-                              <option value="Delivered">Delivered</option>
-                              <option value="Cancelled">Cancelled</option>
+                              <option value="Order Placed">📋 Order Received</option>
+                              <option value="Cooking Fresh">👨‍🍳 Cooking Fresh</option>
+                              <option value="Order Packed">📦 Order Packed</option>
+                              <option value="Out for Delivery">🛵 Out for Delivery</option>
+                              <option value="Arrived at Doorstep">🚪 Arrived at Doorstep</option>
+                              <option value="Delivered">✅ Delivered</option>
+                              <option value="Cancelled">❌ Cancelled</option>
                             </select>
                           </td>
                         </tr>
@@ -1080,6 +1105,19 @@ const AdminPanel = () => {
                         ))}
                       </div>
 
+                      {o.rating > 0 && (
+                        <div style={{ background: "rgba(255, 193, 7, 0.1)", border: "1px solid rgba(255, 193, 7, 0.3)", borderRadius: "8px", padding: "8px 12px", margin: "10px 0" }}>
+                          <span style={{ color: "#FFC107", fontWeight: 700, fontSize: "0.9rem" }}>
+                            {"★".repeat(o.rating)}{"☆".repeat(5 - o.rating)} ({o.rating}/5 Stars)
+                          </span>
+                          {o.review && (
+                            <div style={{ color: "var(--text-muted)", fontSize: "0.8rem", fontStyle: "italic", marginTop: "2px" }}>
+                              "{o.review}"
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       <div className="admin-card-footer">
                         <div className="admin-card-financials">
                           <span className="admin-card-total">₹{o.amount}</span>
@@ -1091,19 +1129,22 @@ const AdminPanel = () => {
                             className={`status-select ${
                               o.status === "Delivered"
                                 ? "delivered"
-                                : o.status === "Out for Delivery"
+                                : o.status === "Out for Delivery" || o.status === "Arrived at Doorstep"
                                 ? "out-delivery"
                                 : "processing"
                             }`}
-                            value={o.status || "Food Processing"}
+                            value={o.status || "Order Placed"}
                             onChange={(e) =>
                               handleStatusUpdate(o._id, e.target.value)
                             }
                           >
-                            <option value="Food Processing">Food Processing</option>
-                            <option value="Out for Delivery">Out for Delivery</option>
-                            <option value="Delivered">Delivered</option>
-                            <option value="Cancelled">Cancelled</option>
+                            <option value="Order Placed">📋 Order Received</option>
+                            <option value="Cooking Fresh">👨‍🍳 Cooking Fresh</option>
+                            <option value="Order Packed">📦 Order Packed</option>
+                            <option value="Out for Delivery">🛵 Out for Delivery</option>
+                            <option value="Arrived at Doorstep">🚪 Arrived at Doorstep</option>
+                            <option value="Delivered">✅ Delivered</option>
+                            <option value="Cancelled">❌ Cancelled</option>
                           </select>
                         </div>
                       </div>

@@ -266,15 +266,26 @@ const UserProfile = () => {
                   </div>
 
                   <div className="avatar-grid">
-                    {avatarPresets.map((url, i) => (
-                      <img
-                        key={i}
-                        src={url}
-                        alt={`Preset ${i}`}
-                        className={`avatar-option ${formData.avatarUrl === url ? "selected" : ""}`}
-                        onClick={() => handleAvatarSelect(url)}
-                      />
-                    ))}
+                    {avatarPresets.map((url, i) => {
+                      const labelsMale = ["😄 Cute Smile", "🕶️ Black Glasses Hero", "😎 Yo-Yo Swag"];
+                      const labelsFemale = ["😄 Cute Smile", "🕶️ Black Glasses Heroine", "😎 Yo-Yo Swag"];
+                      const label = formData.gender === "female" ? labelsFemale[i] : labelsMale[i];
+
+                      return (
+                        <div
+                          key={i}
+                          className={`avatar-card-item ${formData.avatarUrl === url ? "selected" : ""}`}
+                          onClick={() => handleAvatarSelect(url)}
+                        >
+                          <img
+                            src={url}
+                            alt={`Avatar ${i}`}
+                            className="avatar-option-img"
+                          />
+                          <span className="avatar-label-badge">{label}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
