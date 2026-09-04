@@ -12,20 +12,23 @@ const connectDB = async () => {
     }
 
     if (!cached.promise) {
-        const uri = (process.env.MONGODB_URI || "").trim();
+        let uri = (process.env.MONGODB_URI || "").trim().replace(/^['"]|['"]$/g, '');
         const isVercel = Boolean(process.env.VERCEL);
 
         if (!uri && isVercel) {
-            throw new Error("MONGODB_URI is not configured in Vercel Environment Variables.");
+            throw new Error("MONGODB_URI is not configured in Vercel Environment Variables. Please set MONGODB_URI under Project Settings -> Environment Variables.");
         }
 
-        const targetUrl = uri 
-            ? (uri.includes('/yummy-food') ? uri : `${uri.replace(/\/+$/, '')}/yummy-food`)
-            : "mongodb://127.0.0.1:27017/yummy-food";
+        if (uri.includes("cluster0.xxxxxxx.mongodb.net")) {
+            throw new Error("MONGODB_URI contains placeholder domain 'cluster0.xxxxxxx.mongodb.net'. Please replace it with your actual MongoDB Atlas cluster connection string.");
+        }
+
+        const targetUrl = uri || "mongodb://127.0.0.1:27017/yummy-food";
 
         const opts = {
             bufferCommands: false,
-            serverSelectionTimeoutMS: 5000,
+            serverSelectionTimeoutMS: 8000,
+            dbName: "yummy-food"
         };
 
         console.log("[MongoDB] Connecting to database...");

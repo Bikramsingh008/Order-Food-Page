@@ -16,9 +16,15 @@ const Signup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const cleanEmail = form.email.trim().toLowerCase();
+    if (!cleanEmail.endsWith("@gmail.com")) {
+      toast.error("Please enter a valid @gmail.com email address (e.g., yourname@gmail.com).");
+      return;
+    }
+
     try {
       setLoading(true);
-      const res = await axios.post(`${API_URL}/user/register`, form, { withCredentials: true });
+      const res = await axios.post(`${API_URL}/user/register`, { ...form, email: cleanEmail }, { withCredentials: true });
       if (res.data.success) {
         localStorage.setItem("token", res.data.token);
         localStorage.setItem("user", JSON.stringify(res.data.user));
@@ -62,11 +68,11 @@ const Signup = () => {
             />
           </div>
           <div className="form-group">
-            <label>Email Address</label>
+            <label>Email Address (@gmail.com required)</label>
             <input
               type="email"
               name="email"
-              placeholder="user@example.com"
+              placeholder="bicky08@gmail.com"
               value={form.email}
               onChange={handleChange}
               required

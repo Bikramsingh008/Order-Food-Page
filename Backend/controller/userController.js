@@ -48,17 +48,26 @@ const loginUser = async (req, res) => {
 // Route for user Registration
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password, phone, address, gender } = req.body;
+    const cleanEmail = (email || "").trim().toLowerCase();
 
-    const exists = await userModel.findOne({ email });
+    if (!cleanEmail) {
+      return res.status(400).json({ success: false, message: "Email address is required" });
+    }
+
+    if (!validator.isEmail(cleanEmail)) {
+      return res.status(400).json({ success: false, message: "Please enter a valid email address" });
+    }
+
+    if (!cleanEmail.endsWith("@gmail.com")) {
+      return res.status(400).json({ success: false, message: "Email address must end with @gmail.com (e.g. user@gmail.com)" });
+    }
+
+    const exists = await userModel.findOne({ email: cleanEmail });
     if (exists) {
-      return res.status(400).json({ success: false, message: "User already exists" });
+      return res.status(400).json({ success: false, message: "An account with this email already exists" });
     }
 
-    if (!validator.isEmail(email)) {
-      return res.status(400).json({ success: false, message: "Please enter a valid email" });
-    }
-    if (password.length < 8) {
+    if (!password || password.length < 8) {
       return res.status(400).json({ success: false, message: "Password must be at least 8 characters" });
     }
 
@@ -67,7 +76,7 @@ const registerUser = async (req, res) => {
 
     const newUser = new userModel({ 
       name, 
-      email, 
+      email: cleanEmail, 
       password: hashedPassword,
       phone: phone || "",
       address: address || "",
