@@ -48,6 +48,12 @@ const loginUser = async (req, res) => {
 // Route for user Registration
 const registerUser = async (req, res) => {
   try {
+    const { name, email, password, phone, address, gender } = req.body;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ success: false, message: "Full name is required" });
+    }
+
     const cleanEmail = (email || "").trim().toLowerCase();
 
     if (!cleanEmail) {
@@ -75,7 +81,7 @@ const registerUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const newUser = new userModel({ 
-      name, 
+      name: name.trim(), 
       email: cleanEmail, 
       password: hashedPassword,
       phone: phone || "",
