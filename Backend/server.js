@@ -4,6 +4,7 @@ import dotenv from 'dotenv'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
+import mongoose from 'mongoose'
 import connectDB from './config/mongodb.js'
 import connectCloudinary from './config/cloudinary.js'
 import userRouter from './routes/userRoute.js'
@@ -26,36 +27,56 @@ connectDB()
 connectCloudinary()
 
 // Middleware
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "http://localhost:4000"
-];
-
 app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      return callback(null, true);
-    }
-    return callback(null, true);
-  },
-  credentials: true
+  origin: true,
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization", "token"]
 }));
 
 app.use(express.json());
 
-// API Endpoints
-app.use('/api/user', userRouter)
-app.use('/api/product', productRouter)
-app.use('/api/order', orderRouter)
+// Database connection readiness middleware for serverless requests
+app.use(async (req, res, next) => {
+  if (req.path.startsWith('/api') || req.path.startsWith('/user') || req.path.startsWith('/product') || req.path.startsWith('/order')) {
+    try {
+      await connectDB();
+    } catch (e) {
+      console.error("[MongoDB] Middleware error:", e.message);
+    }
+  }
+  next();
+});
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ success: true, message: "YummyFood API is healthy & running" })
-})
+const handleHealth = (req, res) => {
+  const dbStatus = mongoose.connection.readyState === 1 
+    ? "Connected" 
+    : (process.env.MONGODB_URI ? "Connecting/Error" : "Disconnected (Atlas URI required for live DB)");
 
-// Serve Built Frontend & Admin as a Single Unified Application if dist folders exist
+  res.json({ 
+    success: true, 
+    message: "YummyFood API is healthy & running",
+    environment: process.env.VERCEL ? "Vercel Serverless" : "Node Server",
+    database: dbStatus,
+    timestamp: new Date().toISOString()
+  });
+};
+
+app.get('/api/health', handleHealth);
+app.get('/health', handleHealth);
+
+// API Endpoints - mounted with and without /api prefix for maximum serverless compatibility
+app.use('/api/user', userRouter);
+app.use('/user', userRouter);
+
+app.use('/api/product', productRouter);
+app.use('/product', productRouter);
+
+app.use('/api/order', orderRouter);
+app.use('/order', orderRouter);
+
+// Serve Built Frontend & Admin as a Single Unified Application if dist folders exist (when running standalone Node)
 const frontendDist = path.join(__dirname, '../FrontEnd/dist');
 const adminDist = path.join(__dirname, '../Admin/dist');
 
@@ -67,7 +88,7 @@ if (fs.existsSync(frontendDist)) {
   app.use(express.static(frontendDist));
 }
 
-// Fallback SPA routing
+// Fallback SPA routing (for standalone Node server)
 app.use((req, res, next) => {
   if (req.method !== 'GET') {
     return next();
@@ -88,4 +109,9 @@ app.use((req, res, next) => {
   res.send("YummyFood API is running. Build FrontEnd to serve the web UI from this port.");
 });
 
-app.listen(port, () => console.log("Server running on PORT : " + port))
+// Only listen directly when not running in Vercel Serverless
+if (!process.env.VERCEL) {
+  app.listen(port, () => console.log("Server running on PORT : " + port));
+}
+
+export default app;

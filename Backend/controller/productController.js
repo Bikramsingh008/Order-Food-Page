@@ -1,5 +1,31 @@
 import { v2 as cloudinary } from "cloudinary";
+import mongoose from "mongoose";
 import productModel from "../models/productModel.js";
+import { productsData } from "../data/productsData.js";
+
+// Prepare fallback items with deterministic IDs so UI never breaks even if DB is still connecting
+const fallbackProducts = productsData.map((item, index) => ({
+  ...item,
+  _id: `dish_fallback_${index + 1}`,
+  id: `dish_fallback_${index + 1}`,
+  createdAt: new Date(Date.now() - index * 60000).toISOString()
+}));
+
+// Function to auto-seed database if empty
+export const autoSeedIfEmpty = async () => {
+  try {
+    if (mongoose.connection.readyState >= 1) {
+      const count = await productModel.countDocuments();
+      if (count === 0) {
+        console.log("[MongoDB] Database empty! Auto-seeding default dishes...");
+        await productModel.insertMany(productsData);
+        console.log(`[MongoDB] Auto-seeded ${productsData.length} food items.`);
+      }
+    }
+  } catch (err) {
+    console.warn("[MongoDB] Auto-seed check notice:", err.message);
+  }
+};
 
 // function for add product
 const addProduct = async (req, res) => {
@@ -101,11 +127,25 @@ const listProduct = async (req, res) => {
     if (category && category !== "All") filter.category = category;
     if (type && type !== "All") filter.type = type;
 
-    const products = await productModel.find(filter).sort({ createdAt: -1 });
-    res.json({ success: true, products });
+    if (mongoose.connection.readyState >= 1) {
+      const products = await productModel.find(filter).sort({ createdAt: -1 });
+      if (products && products.length > 0) {
+        return res.json({ success: true, products });
+      }
+    }
+
+    // Fallback gracefully to default catalog if DB is connecting, empty, or unconfigured
+    let result = fallbackProducts;
+    if (category && category !== "All") {
+      result = result.filter(p => (p.category || "").toLowerCase() === category.toLowerCase());
+    }
+    if (type && type !== "All") {
+      result = result.filter(p => (p.type || "").toLowerCase() === type.toLowerCase());
+    }
+    return res.json({ success: true, products: result, isFallback: true });
   } catch (error) {
     console.log("Error listing products:", error);
-    res.status(500).json({ success: false, message: error.message });
+    return res.json({ success: true, products: fallbackProducts, isFallback: true });
   }
 };
 
@@ -128,11 +168,28 @@ const singleProduct = async (req, res) => {
     if (!productId) {
       return res.status(400).json({ success: false, message: "Product ID required" });
     }
-    const product = await productModel.findById(productId);
-    if (!product) {
-      return res.status(404).json({ success: false, message: "Product not found" });
+
+    if (mongoose.connection.readyState >= 1) {
+      try {
+        const product = await productModel.findById(productId);
+        if (product) return res.json({ success: true, product });
+      } catch (err) {
+        // Not a MongoDB ObjectId or not in DB, continue to fallback match
+      }
     }
-    res.json({ success: true, product });
+
+    // Match in fallback catalog by id, _id or title
+    const match = fallbackProducts.find(p =>
+      p._id === productId ||
+      p.id === productId ||
+      String(p.title).toLowerCase() === String(productId).toLowerCase()
+    );
+
+    if (match) {
+      return res.json({ success: true, product: match });
+    }
+
+    res.status(404).json({ success: false, message: "Product not found" });
   } catch (error) {
     console.log("Error getting single product:", error);
     res.status(500).json({ success: false, message: error.message });

@@ -5,14 +5,28 @@
   "main": "Backend/server.js",
   "type": "module",
   "scripts": {
-    "install:all": "npm --prefix Backend install && npm --prefix FrontEnd install && npm --prefix Admin install",
+    "install:all": "npm install && npm --prefix Backend install && npm --prefix FrontEnd install && npm --prefix Admin install",
     "build:frontend": "npm --prefix FrontEnd install && npm --prefix FrontEnd run build",
     "build:admin": "npm --prefix Admin install && npm --prefix Admin run build",
-    "build": "npm --prefix Backend install && npm --prefix FrontEnd install && npm --prefix FrontEnd run build && npm --prefix Admin install && npm --prefix Admin run build",
-    "start": "npm --prefix Backend start",
-    "server": "npm --prefix Backend run server",
+    "build": "npm --prefix FrontEnd install --legacy-peer-deps && npm --prefix FrontEnd run build",
+    "build:all": "npm --prefix Backend install && npm --prefix FrontEnd install && npm --prefix FrontEnd run build && npm --prefix Admin install && npm --prefix Admin run build",
+    "start": "node Backend/server.js",
+    "server": "nodemon Backend/server.js",
     "dev:frontend": "npm --prefix FrontEnd run dev",
     "dev:admin": "npm --prefix Admin run dev"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^2.7.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.18.0",
+    "multer": "^2.0.2",
+    "razorpay": "^2.9.6",
+    "validator": "^13.15.15"
   },
   "keywords": [
     "food-ordering",
