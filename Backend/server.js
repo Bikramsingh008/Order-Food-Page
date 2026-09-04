@@ -41,11 +41,17 @@ app.use(async (req, res, next) => {
   if (req.path.startsWith('/api') || req.path.startsWith('/user') || req.path.startsWith('/product') || req.path.startsWith('/order')) {
     try {
       await connectDB();
+      next();
     } catch (e) {
-      console.error("[MongoDB] Middleware error:", e.message);
+      console.error("[MongoDB] Middleware connection error:", e.message);
+      return res.status(500).json({ 
+        success: false, 
+        message: `Database connection error: ${e.message}. Please check your MONGODB_URI and MongoDB Atlas Network Access IP whitelist (0.0.0.0/0).` 
+      });
     }
+  } else {
+    next();
   }
-  next();
 });
 
 // Health check endpoint

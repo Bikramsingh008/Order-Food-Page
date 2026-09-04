@@ -1,65 +1,55 @@
 import mongoose from "mongoose";
 
-let isConnecting = false;
+let cached = global.mongoose;
+
+if (!cached) {
+    cached = global.mongoose = { conn: null, promise: null };
+}
 
 const connectDB = async () => {
-    if (mongoose.connection.readyState === 1) {
-        return mongoose.connection;
-    }
-    if (isConnecting) {
-        return;
+    if (cached.conn && mongoose.connection.readyState === 1) {
+        return cached.conn;
     }
 
-    try {
-        isConnecting = true;
+    if (!cached.promise) {
         const uri = (process.env.MONGODB_URI || "").trim();
         const isVercel = Boolean(process.env.VERCEL);
 
-        // If on Vercel and uri points to localhost or is missing, warn and return early
-        if (isVercel) {
-            if (!uri || uri.includes("127.0.0.1") || uri.includes("localhost")) {
-                console.warn("[MongoDB] Cloud MongoDB Atlas URI not configured. Set MONGODB_URI in Vercel project environment variables.");
-                isConnecting = false;
-                return;
-            }
+        if (!uri && isVercel) {
+            throw new Error("MONGODB_URI is not configured in Vercel Environment Variables.");
         }
 
-        if (uri) {
-            try {
-                const targetUrl = uri.includes('/yummy-food') ? uri : `${uri.replace(/\/+$/, '')}/yummy-food`;
-                console.log("[MongoDB] Connecting to database...");
-                await mongoose.connect(targetUrl, { serverSelectionTimeoutMS: 5000 });
-                console.log("[MongoDB] Connection established successfully.");
+        const targetUrl = uri 
+            ? (uri.includes('/yummy-food') ? uri : `${uri.replace(/\/+$/, '')}/yummy-food`)
+            : "mongodb://127.0.0.1:27017/yummy-food";
 
-                // Trigger auto-seed check asynchronously
-                import("../controller/productController.js").then(({ autoSeedIfEmpty }) => {
-                    autoSeedIfEmpty();
-                }).catch(() => {});
+        const opts = {
+            bufferCommands: false,
+            serverSelectionTimeoutMS: 5000,
+        };
 
-                isConnecting = false;
-                return;
-            } catch (err) {
-                console.warn("[MongoDB] Primary MongoDB connection failed (" + err.message + ")");
-            }
-        }
-
-        // Only use local fallback when NOT on Vercel
-        if (!isVercel) {
-            const fallbackUrl = "mongodb://127.0.0.1:27017/yummy-food";
-            console.log("[MongoDB] Connecting to local MongoDB fallback:", fallbackUrl);
-            await mongoose.connect(fallbackUrl, { serverSelectionTimeoutMS: 3000 });
-            console.log("[MongoDB] Local fallback connected.");
-
+        console.log("[MongoDB] Connecting to database...");
+        cached.promise = mongoose.connect(targetUrl, opts).then((mongooseInstance) => {
+            console.log("[MongoDB] Connection established successfully.");
             import("../controller/productController.js").then(({ autoSeedIfEmpty }) => {
                 autoSeedIfEmpty();
             }).catch(() => {});
-        }
-
-    } catch (error) {
-        console.error("[MongoDB] Connection Error:", error.message);
-    } finally {
-        isConnecting = false;
+            return mongooseInstance;
+        }).catch((err) => {
+            cached.promise = null;
+            console.error("[MongoDB] Connection Error:", err.message);
+            throw err;
+        });
     }
+
+    try {
+        cached.conn = await cached.promise;
+    } catch (e) {
+        cached.promise = null;
+        throw e;
+    }
+
+    return cached.conn;
 };
 
 export default connectDB;
