@@ -1,0 +1,56 @@
+/* ===================================================
+   Sleek Sticker Avatar Display System
+   =================================================== */
+
+.live-avatar-wrapper {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  border-radius: 50%;
+}
+
+.live-avatar-wrapper:hover {
+  transform: scale(1.06);
+}
+
+/* Sizing Variants */
+.live-avatar-wrapper.size-sm {
+  width: 44px;
+  height: 44px;
+}
+
+.live-avatar-wrapper.size-md {
+  width: 72px;
+  height: 72px;
+}
+
+.live-avatar-wrapper.size-lg {
+  width: 100px;
+  height: 100px;
+}
+
+.live-avatar-wrapper.size-xl {
+  width: 140px;
+  height: 140px;
+}
+
+/* Frame & Image */
+.live-avatar-frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2.5px solid var(--brand-orange);
+  box-shadow: 0 6px 18px rgba(255, 107, 0, 0.3);
+  overflow: hidden;
+  background: #181c28;
+}
+
+.live-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}

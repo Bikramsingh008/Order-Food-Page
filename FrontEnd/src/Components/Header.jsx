@@ -15,6 +15,7 @@ import {
 } from "react-icons/fa";
 import { NavLink, Link, useNavigate, useLocation } from "react-router-dom";
 import { getCartoonAvatar } from "../utils/avatar";
+import LiveAvatar from "./LiveAvatar";
 
 const Header = ({ count }) => {
   const navigate = useNavigate();
@@ -125,10 +126,11 @@ const Header = ({ count }) => {
                   aria-expanded={dropdownOpen}
                   aria-label="User profile menu"
                 >
-                  <img
+                  <LiveAvatar
                     src={userAvatarUrl}
                     alt={user.name || "User Avatar"}
-                    className="yf-avatar-img"
+                    size="sm"
+                    interactive={false}
                   />
                   <span className="yf-user-name">
                     {user.role === "admin" ? "Admin" : user.name}

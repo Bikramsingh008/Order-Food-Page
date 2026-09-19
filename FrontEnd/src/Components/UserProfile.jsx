@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useLocation, useNavigate } from "react-router-dom";
 import { API_URL } from "../utils/api";
-import { getCartoonAvatar, MALE_AVATARS, FEMALE_AVATARS } from "../utils/avatar";
+import { getCartoonAvatar, STICKER_AVATARS } from "../utils/avatar";
+import LiveAvatar from "./LiveAvatar";
 import MyOrders from "./MyOrders";
 import {
   FaUser,
@@ -14,15 +15,17 @@ import {
   FaSave,
   FaBox,
   FaSignOutAlt,
-  FaMars,
-  FaVenus,
   FaSmile,
+  FaCheck,
+  FaChevronLeft,
+  FaChevronRight,
 } from "react-icons/fa";
 import "./UserProfile.css";
 
 const UserProfile = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const sliderRef = useRef(null);
 
   // Read initial tab from URL query param ?tab=orders
   const queryParams = new URLSearchParams(location.search);
@@ -32,6 +35,13 @@ const UserProfile = () => {
 
   const localUser = JSON.parse(localStorage.getItem("user") || "{}");
   const token = localStorage.getItem("token");
+
+  const scrollSlider = (direction) => {
+    if (sliderRef.current) {
+      const scrollAmount = direction === "left" ? -240 : 240;
+      sliderRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
+    }
+  };
 
   const [formData, setFormData] = useState({
     name: localUser.name || "",
@@ -104,20 +114,9 @@ const UserProfile = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleGenderChange = (selectedGender) => {
-    const defaultAvatar = selectedGender === "female" 
-      ? `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(formData.name || "girl")}`
-      : `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(formData.name || "boy")}`;
-
-    setFormData((prev) => ({
-      ...prev,
-      gender: selectedGender,
-      avatarUrl: defaultAvatar,
-    }));
-  };
-
   const handleAvatarSelect = (url) => {
     setFormData((prev) => ({ ...prev, avatarUrl: url }));
+    toast.success("Sticker Avatar selected! Click 'Save Profile Details' to confirm.");
   };
 
   const handleLogout = () => {
@@ -149,7 +148,7 @@ const UserProfile = () => {
       );
 
       if (res.data.success) {
-        toast.success("Profile & Cool Cartoon Avatar updated!");
+        toast.success("✨ Sticker Avatar & Profile details saved!");
         const updatedUser = {
           ...localUser,
           name: res.data.user.name,
@@ -172,22 +171,24 @@ const UserProfile = () => {
   };
 
   const currentAvatar = getCartoonAvatar(formData);
-  const avatarPresets = formData.gender === "female" ? FEMALE_AVATARS : MALE_AVATARS;
 
   return (
     <div className="profile-container">
       <div className="profile-card">
-        {/* Header */}
+        {/* Profile Header with Sticker Avatar */}
         <div className="profile-header">
           <div className="profile-avatar-wrapper">
-            <img
+            <LiveAvatar
               src={currentAvatar}
-              alt="User Cartoon Avatar"
-              className="profile-avatar-cartoon"
+              alt={formData.name || "User"}
+              size="lg"
             />
             <div className="profile-title-group">
               <h2>{formData.name || "My Account"}</h2>
               <p>{formData.email}</p>
+              <div className="live-status-pill">
+                <span className="live-dot"></span> Profile Badge
+              </div>
             </div>
           </div>
 
@@ -221,7 +222,7 @@ const UserProfile = () => {
             className={`profile-tab-btn ${activeTab === "info" ? "active" : ""}`}
             onClick={() => setActiveTab("info")}
           >
-            <FaUser /> Account & Cool Cartoon Avatar
+            <FaUser /> Account & Sticker Avatar
           </button>
           <button
             className={`profile-tab-btn ${activeTab === "orders" ? "active" : ""}`}
@@ -231,64 +232,69 @@ const UserProfile = () => {
           </button>
         </div>
 
-        {/* TAB 1: ACCOUNT DETAILS & CARTOON AVATAR */}
+        {/* TAB 1: ACCOUNT DETAILS & STICKER AVATAR SELECTION */}
         {activeTab === "info" && (
           <div>
             {fetching ? (
               <p style={{ textAlign: "center", color: "#A0A0A0" }}>Loading account profile...</p>
             ) : (
               <form onSubmit={handleSubmit}>
-                {/* Gender & Cartoon Avatar Selector */}
-                <div className="avatar-picker-section">
+                {/* Compact Horizontal Slider for Avatar Selection */}
+                <div className="avatar-picker-section compact-slider-section">
                   <div className="avatar-picker-title">
-                    <FaSmile style={{ color: "var(--brand-orange)", marginRight: "6px" }} /> Choose Avatar Style & Gender
+                    <FaSmile style={{ color: "var(--brand-orange)", marginRight: "6px" }} /> Choose Avatar (Slide left/right for colors & expressions)
                   </div>
 
-                  <div className="gender-toggle-group">
+                  <div className="avatar-slider-wrapper">
                     <button
                       type="button"
-                      className={`gender-btn ${formData.gender === "male" ? "active" : ""}`}
-                      onClick={() => handleGenderChange("male")}
+                      className="avatar-slide-btn left"
+                      onClick={() => scrollSlider("left")}
+                      aria-label="Scroll left"
                     >
-                      <FaMars /> Male (Boy Cartoon)
+                      <FaChevronLeft />
                     </button>
+
+                    <div className="avatar-slider-track" ref={sliderRef}>
+                      {STICKER_AVATARS.map((item) => {
+                        const isSelected = formData.avatarUrl === item.url;
+                        return (
+                          <div
+                            key={item.id}
+                            className={`avatar-slide-chip ${isSelected ? "selected" : ""}`}
+                            onClick={() => handleAvatarSelect(item.url)}
+                            title={item.name}
+                          >
+                            <div className="avatar-slide-img-wrap">
+                              <img
+                                src={item.url}
+                                alt={item.name}
+                                className="avatar-slide-img"
+                              />
+                              {isSelected && (
+                                <div className="selected-check-badge">
+                                  <FaCheck />
+                                </div>
+                              )}
+                            </div>
+                            <span className="avatar-slide-name">{item.name}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
                     <button
                       type="button"
-                      className={`gender-btn ${formData.gender === "female" ? "active" : ""}`}
-                      onClick={() => handleGenderChange("female")}
+                      className="avatar-slide-btn right"
+                      onClick={() => scrollSlider("right")}
+                      aria-label="Scroll right"
                     >
-                      <FaVenus /> Female (Girl Cartoon)
+                      <FaChevronRight />
                     </button>
-                  </div>
-
-                  <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "8px" }}>
-                    Select a cool cartoon style:
-                  </div>
-
-                  <div className="avatar-grid">
-                    {avatarPresets.map((url, i) => {
-                      const labelsMale = ["😄 Cute Smile", "🕶️ Black Glasses Hero", "😎 Yo-Yo Swag"];
-                      const labelsFemale = ["😄 Cute Smile", "🕶️ Black Glasses Heroine", "😎 Yo-Yo Swag"];
-                      const label = formData.gender === "female" ? labelsFemale[i] : labelsMale[i];
-
-                      return (
-                        <div
-                          key={i}
-                          className={`avatar-card-item ${formData.avatarUrl === url ? "selected" : ""}`}
-                          onClick={() => handleAvatarSelect(url)}
-                        >
-                          <img
-                            src={url}
-                            alt={`Avatar ${i}`}
-                            className="avatar-option-img"
-                          />
-                          <span className="avatar-label-badge">{label}</span>
-                        </div>
-                      );
-                    })}
                   </div>
                 </div>
 
+                {/* Account Form Fields */}
                 <div className="profile-form-grid">
                   <div className="profile-form-group">
                     <label>

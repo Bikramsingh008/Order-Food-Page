@@ -4,7 +4,7 @@ import userModel from "../models/userModel.js";
 // Place User Order
 const placeOrder = async (req, res) => {
     try {
-        const { userId, items, amount, address, paymentMethod } = req.body;
+        const { userId, items, amount, address, paymentMethod, isPaid } = req.body;
 
         if (!items || items.length === 0) {
             return res.status(400).json({ success: false, message: "Cart is empty" });
@@ -16,7 +16,7 @@ const placeOrder = async (req, res) => {
             amount,
             address: address || {},
             paymentMethod: paymentMethod || "COD",
-            isPaid: paymentMethod === "Online" || paymentMethod === "Card",
+            isPaid: typeof isPaid === "boolean" ? isPaid : (paymentMethod === "Razorpay" || paymentMethod === "Online" || paymentMethod === "Card"),
             status: "Order Placed",
             date: new Date()
         });

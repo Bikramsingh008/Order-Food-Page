@@ -17,6 +17,7 @@ import {
   FaShieldAlt,
 } from "react-icons/fa";
 import { API_URL } from "../utils/api";
+import RazorpayModal from "./RazorpayModal";
 import "./Cart.css";
 
 const PROMO_CODES = [
@@ -29,6 +30,7 @@ const Cart = ({ cartItems, updateQuantity, removeFromCart, clearCart, handleCart
   const navigate = useNavigate();
 
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [showRazorpayModal, setShowRazorpayModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [placedOrderDetails, setPlacedOrderDetails] = useState(null);
 
@@ -58,7 +60,7 @@ const Cart = ({ cartItems, updateQuantity, removeFromCart, clearCart, handleCart
     city: user?.address?.city || "",
     state: user?.address?.state || "",
     zipcode: user?.address?.zipcode || "",
-    paymentMethod: "COD",
+    paymentMethod: "Razorpay",
   });
 
   // Fetch top recommendations for empty cart and upsell
@@ -164,13 +166,7 @@ const Cart = ({ cartItems, updateQuantity, removeFromCart, clearCart, handleCart
     setShowCheckoutModal(true);
   };
 
-  const handlePlaceOrder = async (e) => {
-    e.preventDefault();
-    if (!formData.phone || !formData.street || !formData.city) {
-      toast.error("Please enter complete delivery address and phone number.");
-      return;
-    }
-
+  const processOrderSubmission = async ({ paymentMethodOverride, isPaidOverride, paymentId } = {}) => {
     const token = localStorage.getItem("token");
     if (!token) {
       toast.error("Authentication expired. Please log in again.");
@@ -210,6 +206,9 @@ const Cart = ({ cartItems, updateQuantity, removeFromCart, clearCart, handleCart
         };
       });
 
+      const finalPaymentMethod = paymentMethodOverride || formData.paymentMethod || "COD";
+      const finalIsPaid = typeof isPaidOverride === "boolean" ? isPaidOverride : (finalPaymentMethod === "Razorpay" || finalPaymentMethod === "Card");
+
       const orderPayload = {
         items: orderItems,
         amount: Math.round(grandTotal),
@@ -217,7 +216,9 @@ const Cart = ({ cartItems, updateQuantity, removeFromCart, clearCart, handleCart
           ...formData,
           orderNotes: orderNotes.trim() || undefined,
         },
-        paymentMethod: formData.paymentMethod,
+        paymentMethod: finalPaymentMethod,
+        isPaid: finalIsPaid,
+        paymentId: paymentId || null,
         riderTip,
         promoCode: appliedPromo?.code || null,
         discount: promoDiscount,
@@ -228,7 +229,7 @@ const Cart = ({ cartItems, updateQuantity, removeFromCart, clearCart, handleCart
       });
 
       if (res.data.success) {
-        toast.success("🎉 Order placed successfully!");
+        toast.success(finalIsPaid ? "💳 Payment Verified! Order placed." : "🎉 Order placed successfully!");
         const orderId = res.data.orderId || res.data.order?._id || res.data.order?.id;
 
         // ── Save order placement timestamp so stage calculator can anchor from NOW ──
@@ -241,10 +242,12 @@ const Cart = ({ cartItems, updateQuantity, removeFromCart, clearCart, handleCart
           total: Math.round(grandTotal),
           address: formData,
           items: orderItems,
-          paymentMethod: formData.paymentMethod,
+          paymentMethod: finalPaymentMethod,
+          isPaid: finalIsPaid,
         });
         if (typeof clearCart === "function") clearCart();
         setShowCheckoutModal(false);
+        setShowRazorpayModal(false);
       } else {
         toast.error(res.data.message || "Failed to place order");
       }
@@ -253,6 +256,27 @@ const Cart = ({ cartItems, updateQuantity, removeFromCart, clearCart, handleCart
       toast.error(error.response?.data?.message || "Error placing order");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handlePlaceOrder = (e) => {
+    e.preventDefault();
+    if (!formData.phone || !formData.street || !formData.city) {
+      toast.error("Please enter complete delivery address and phone number.");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Authentication expired. Please log in again.");
+      navigate("/signin");
+      return;
+    }
+
+    if (formData.paymentMethod === "Razorpay") {
+      setShowRazorpayModal(true);
+    } else {
+      processOrderSubmission({ paymentMethodOverride: "COD", isPaidOverride: false });
     }
   };
 
@@ -906,6 +930,31 @@ const Cart = ({ cartItems, updateQuantity, removeFromCart, clearCart, handleCart
                   <div className="payment-options-grid">
                     <label
                       className={`payment-card-option ${
+                        formData.paymentMethod === "Razorpay" ? "selected" : ""
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="Razorpay"
+                        checked={formData.paymentMethod === "Razorpay"}
+                        onChange={handleInputChange}
+                      />
+                      <div className="payment-option-content">
+                        <span className="payment-icon">⚡</span>
+                        <div>
+                          <div className="payment-name">
+                            Razorpay Gateway (UPI / Card / NetBanking)
+                          </div>
+                          <div className="payment-sub">
+                            Instant online payment via Google Pay, Cards & NetBanking
+                          </div>
+                        </div>
+                      </div>
+                    </label>
+
+                    <label
+                      className={`payment-card-option ${
                         formData.paymentMethod === "COD" ? "selected" : ""
                       }`}
                     >
@@ -921,48 +970,6 @@ const Cart = ({ cartItems, updateQuantity, removeFromCart, clearCart, handleCart
                         <div>
                           <div className="payment-name">Cash on Delivery (COD)</div>
                           <div className="payment-sub">Pay in cash or UPI upon delivery</div>
-                        </div>
-                      </div>
-                    </label>
-
-                    <label
-                      className={`payment-card-option ${
-                        formData.paymentMethod === "UPI" ? "selected" : ""
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value="UPI"
-                        checked={formData.paymentMethod === "UPI"}
-                        onChange={handleInputChange}
-                      />
-                      <div className="payment-option-content">
-                        <span className="payment-icon">⚡</span>
-                        <div>
-                          <div className="payment-name">Instant UPI / QR</div>
-                          <div className="payment-sub">GPay, PhonePe, Paytm QR</div>
-                        </div>
-                      </div>
-                    </label>
-
-                    <label
-                      className={`payment-card-option ${
-                        formData.paymentMethod === "Card" ? "selected" : ""
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value="Card"
-                        checked={formData.paymentMethod === "Card"}
-                        onChange={handleInputChange}
-                      />
-                      <div className="payment-option-content">
-                        <span className="payment-icon">💳</span>
-                        <div>
-                          <div className="payment-name">Credit / Debit Card</div>
-                          <div className="payment-sub">Visa, Mastercard, RuPay</div>
                         </div>
                       </div>
                     </label>
@@ -986,12 +993,35 @@ const Cart = ({ cartItems, updateQuantity, removeFromCart, clearCart, handleCart
                 className="place-order-confirm-btn"
                 disabled={submitting}
               >
-                {submitting ? "Placing Order..." : `Confirm & Place Order (₹${Math.round(grandTotal)})`}
+                {submitting
+                  ? "Processing..."
+                  : formData.paymentMethod === "Razorpay"
+                  ? `Proceed to Razorpay Payment (₹${Math.round(grandTotal)}) →`
+                  : `Confirm & Place Order (₹${Math.round(grandTotal)})`}
               </button>
             </form>
           </div>
         </div>
       )}
+
+      {/* Razorpay Gateway Modal */}
+      <RazorpayModal
+        isOpen={showRazorpayModal}
+        onClose={() => setShowRazorpayModal(false)}
+        amount={Math.round(grandTotal)}
+        customerData={{
+          name: `${formData.firstName} ${formData.lastName}`.trim(),
+          email: formData.email,
+          phone: formData.phone,
+        }}
+        onSuccess={({ paymentId, paymentMethod }) => {
+          processOrderSubmission({
+            paymentMethodOverride: paymentMethod || "Razorpay",
+            isPaidOverride: true,
+            paymentId,
+          });
+        }}
+      />
     </div>
   );
 };
